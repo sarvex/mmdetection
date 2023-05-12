@@ -144,12 +144,11 @@ class DetInferencer(BaseInferencer):
             cfg_palette = metainfo.get('palette', None)
             if cfg_palette is not None:
                 model.dataset_meta['palette'] = cfg_palette
-            else:
-                if 'palette' not in model.dataset_meta:
-                    warnings.warn(
-                        'palette does not exist, random is used by default. '
-                        'You can also set the palette to customize.')
-                    model.dataset_meta['palette'] = 'random'
+            elif 'palette' not in model.dataset_meta:
+                warnings.warn(
+                    'palette does not exist, random is used by default. '
+                    'You can also set the palette to customize.')
+                model.dataset_meta['palette'] = 'random'
 
     def _init_pipeline(self, cfg: ConfigType) -> Compose:
         """Initialize the test pipeline."""
@@ -174,10 +173,14 @@ class DetInferencer(BaseInferencer):
 
         If the transform is not found, returns -1.
         """
-        for i, transform in enumerate(pipeline_cfg):
-            if transform['type'] == name:
-                return i
-        return -1
+        return next(
+            (
+                i
+                for i, transform in enumerate(pipeline_cfg)
+                if transform['type'] == name
+            ),
+            -1,
+        )
 
     def _init_visualizer(self, cfg: ConfigType) -> Optional[Visualizer]:
         """Initialize visualizers.
@@ -399,10 +402,10 @@ class DetInferencer(BaseInferencer):
             List[np.ndarray] or None: Returns visualization results only if
             applicable.
         """
-        if no_save_vis is True:
+        if no_save_vis:
             img_out_dir = ''
 
-        if not show and img_out_dir == '' and not return_vis:
+        if not show and not img_out_dir and not return_vis:
             return None
 
         if self.visualizer is None:
@@ -487,10 +490,9 @@ class DetInferencer(BaseInferencer):
                 json-serializable dict containing only basic data elements such
                 as strings and numbers.
         """
-        if no_save_pred is True:
+        if no_save_pred:
             pred_out_dir = ''
 
-        result_dict = {}
         results = preds
         if not return_datasample:
             results = []
@@ -501,8 +503,7 @@ class DetInferencer(BaseInferencer):
             warnings.warn('Currently does not support saving datasample '
                           'when return_datasample is set to True. '
                           'Prediction results are not saved!')
-        # Add img to the results after printing and dumping
-        result_dict['predictions'] = results
+        result_dict = {'predictions': results}
         if print_result:
             print(result_dict)
         result_dict['visualization'] = visualization
@@ -528,23 +529,20 @@ class DetInferencer(BaseInferencer):
         Returns:
             dict: Prediction results.
         """
-        is_save_pred = True
-        if pred_out_dir == '':
-            is_save_pred = False
-
-        if is_save_pred and 'img_path' in data_sample:
-            img_path = osp.basename(data_sample.img_path)
-            img_path = osp.splitext(img_path)[0]
-            out_img_path = osp.join(pred_out_dir, 'preds',
-                                    img_path + '_panoptic_seg.png')
-            out_json_path = osp.join(pred_out_dir, 'preds', img_path + '.json')
-        elif is_save_pred:
-            out_img_path = osp.join(
-                pred_out_dir, 'preds',
-                f'{self.num_predicted_imgs}_panoptic_seg.png')
-            out_json_path = osp.join(pred_out_dir, 'preds',
-                                     f'{self.num_predicted_imgs}.json')
-            self.num_predicted_imgs += 1
+        is_save_pred = bool(pred_out_dir)
+        if is_save_pred:
+            if 'img_path' in data_sample:
+                img_path = osp.basename(data_sample.img_path)
+                img_path = osp.splitext(img_path)[0]
+                out_img_path = osp.join(pred_out_dir, 'preds', f'{img_path}_panoptic_seg.png')
+                out_json_path = osp.join(pred_out_dir, 'preds', f'{img_path}.json')
+            else:
+                out_img_path = osp.join(
+                    pred_out_dir, 'preds',
+                    f'{self.num_predicted_imgs}_panoptic_seg.png')
+                out_json_path = osp.join(pred_out_dir, 'preds',
+                                         f'{self.num_predicted_imgs}.json')
+                self.num_predicted_imgs += 1
 
         result = {}
         if 'pred_instances' in data_sample:

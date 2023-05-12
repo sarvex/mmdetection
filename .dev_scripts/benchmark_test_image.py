@@ -36,8 +36,7 @@ def parse_args():
         help='Color palette used for visualization')
     parser.add_argument(
         '--score-thr', type=float, default=0.3, help='bbox score threshold')
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def inference_model(config_name, checkpoint, visualizer, args, logger=None):
@@ -91,21 +90,20 @@ def main(args):
 
     # test single model
     if args.model_name:
-        if args.model_name in config:
-            model_infos = config[args.model_name]
-            if not isinstance(model_infos, list):
-                model_infos = [model_infos]
-            model_info = model_infos[0]
-            config_name = model_info['config'].strip()
-            print(f'processing: {config_name}', flush=True)
-            checkpoint = osp.join(args.checkpoint_root,
-                                  model_info['checkpoint'].strip())
-            # build the model from a config file and a checkpoint file
-            inference_model(config_name, checkpoint, visualizer, args)
-            return
-        else:
+        if args.model_name not in config:
             raise RuntimeError('model name input error.')
 
+        model_infos = config[args.model_name]
+        if not isinstance(model_infos, list):
+            model_infos = [model_infos]
+        model_info = model_infos[0]
+        config_name = model_info['config'].strip()
+        print(f'processing: {config_name}', flush=True)
+        checkpoint = osp.join(args.checkpoint_root,
+                              model_info['checkpoint'].strip())
+        # build the model from a config file and a checkpoint file
+        inference_model(config_name, checkpoint, visualizer, args)
+        return
     # test all model
     logger = MMLogger.get_instance(
         name='MMLogger',

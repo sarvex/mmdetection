@@ -81,10 +81,11 @@ test_dataloader = val_dataloader
 
 val_evaluator = dict(
     type='CocoMetric',
-    ann_file=data_root + 'annotations/instances_val2017.json',
+    ann_file=f'{data_root}annotations/instances_val2017.json',
     metric='bbox',
     format_only=False,
-    backend_args=backend_args)
+    backend_args=backend_args,
+)
 test_evaluator = val_evaluator
 
 # training schedule for 90k

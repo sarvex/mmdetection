@@ -46,8 +46,7 @@ def parse_args():
         '--intranet',
         action='store_true',
         help='switch to internal network url')
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 if __name__ == '__main__':
@@ -76,7 +75,7 @@ if __name__ == '__main__':
                 checkpoint_url_list.append(url)
                 checkpoint_out_list.append(out_file)
 
-    if len(checkpoint_url_list) > 0:
+    if checkpoint_url_list:
         pool = Pool(min(os.cpu_count(), args.nproc))
         pool.starmap(download, zip(checkpoint_url_list, checkpoint_out_list))
     else:

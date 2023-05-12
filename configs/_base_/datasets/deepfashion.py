@@ -1,5 +1,4 @@
 # dataset settings
-dataset_type = 'DeepFashionDataset'
 data_root = 'data/DeepFashion/In-shop/'
 
 # Example to use different file client
@@ -33,6 +32,7 @@ test_pipeline = [
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
                    'scale_factor'))
 ]
+dataset_type = 'DeepFashionDataset'
 train_dataloader = dict(
     batch_size=2,
     num_workers=2,
@@ -81,15 +81,15 @@ test_dataloader = dict(
 
 val_evaluator = dict(
     type='CocoMetric',
-    ann_file=data_root +
-    'Anno/segmentation/DeepFashion_segmentation_query.json',
+    ann_file=f'{data_root}Anno/segmentation/DeepFashion_segmentation_query.json',
     metric=['bbox', 'segm'],
     format_only=False,
-    backend_args=backend_args)
+    backend_args=backend_args,
+)
 test_evaluator = dict(
     type='CocoMetric',
-    ann_file=data_root +
-    'Anno/segmentation/DeepFashion_segmentation_gallery.json',
+    ann_file=f'{data_root}Anno/segmentation/DeepFashion_segmentation_gallery.json',
     metric=['bbox', 'segm'],
     format_only=False,
-    backend_args=backend_args)
+    backend_args=backend_args,
+)

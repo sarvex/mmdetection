@@ -249,7 +249,7 @@ class FixShapeResize(Resize):
         self.keep_ratio = keep_ratio
         self.clip_object_border = clip_object_border
 
-        if keep_ratio is True:
+        if keep_ratio:
             # padding to the fixed size when keep_ratio=True
             self.pad_transform = Pad(size=self.scale, pad_val=pad_val)
 
@@ -365,14 +365,14 @@ class RandomFlip(MMCV_RandomFlip):
         cur_dir = results['flip_direction']
         h, w = results['img'].shape[:2]
 
-        if cur_dir == 'horizontal':
+        if cur_dir == 'diagonal':
+            homography_matrix = np.array([[-1, 0, w], [0, -1, h], [0, 0, 1]],
+                                         dtype=np.float32)
+        elif cur_dir == 'horizontal':
             homography_matrix = np.array([[-1, 0, w], [0, 1, 0], [0, 0, 1]],
                                          dtype=np.float32)
         elif cur_dir == 'vertical':
             homography_matrix = np.array([[1, 0, 0], [0, -1, h], [0, 0, 1]],
-                                         dtype=np.float32)
-        elif cur_dir == 'diagonal':
-            homography_matrix = np.array([[-1, 0, w], [0, -1, h], [0, 0, 1]],
                                          dtype=np.float32)
         else:
             homography_matrix = np.eye(3, dtype=np.float32)
@@ -444,7 +444,7 @@ class RandomShift(BaseTransform):
         assert max_shift_px >= 0
         self.prob = prob
         self.max_shift_px = max_shift_px
-        self.filter_thr_px = int(filter_thr_px)
+        self.filter_thr_px = filter_thr_px
 
     @cache_randomness
     def _random_prob(self) -> float:
@@ -669,7 +669,7 @@ class RandomCrop(BaseTransform):
                 'relative_range', 'relative', 'absolute', 'absolute_range'
         ]:
             raise ValueError(f'Invalid crop_type {crop_type}.')
-        if crop_type in ['absolute', 'absolute_range']:
+        if crop_type in {'absolute', 'absolute_range'}:
             assert crop_size[0] > 0 and crop_size[1] > 0
             assert isinstance(crop_size[0], int) and isinstance(
                 crop_size[1], int)
@@ -971,9 +971,8 @@ class PhotoMetricDistortion(BaseTransform):
 
         # mode == 0 --> do random contrast first
         # mode == 1 --> do random contrast last
-        if mode == 1:
-            if contrast_flag:
-                img *= alpha_value
+        if mode == 1 and contrast_flag:
+            img *= alpha_value
 
         # convert color from BGR to HSV
         img = mmcv.bgr2hsv(img)
@@ -996,9 +995,8 @@ class PhotoMetricDistortion(BaseTransform):
         img = mmcv.hsv2bgr(img)
 
         # random contrast
-        if mode == 0:
-            if contrast_flag:
-                img *= alpha_value
+        if mode == 0 and contrast_flag:
+            img *= alpha_value
 
         # randomly swap channels
         if swap_flag:
@@ -1058,10 +1056,7 @@ class Expand(BaseTransform):
                  prob: float = 0.5) -> None:
         self.to_rgb = to_rgb
         self.ratio_range = ratio_range
-        if to_rgb:
-            self.mean = mean[::-1]
-        else:
-            self.mean = mean
+        self.mean = mean[::-1] if to_rgb else mean
         self.min_ratio, self.max_ratio = ratio_range
         self.seg_ignore_label = seg_ignore_label
         self.prob = prob
@@ -1521,7 +1516,7 @@ class Albu(BaseTransform):
                 raise NotImplementedError(
                     'Albu only supports horizontal boxes now')
             bboxes = results['bboxes'].numpy()
-            results['bboxes'] = [x for x in bboxes]
+            results['bboxes'] = list(bboxes)
             # add pseudo-field for filtration
             if self.filter_lost_elements:
                 results['idx_mapper'] = np.arange(len(results['bboxes']))
@@ -1536,7 +1531,7 @@ class Albu(BaseTransform):
             if albumentations.__version__ < '0.5':
                 results['masks'] = results['masks'].masks
             else:
-                results['masks'] = [mask for mask in results['masks'].masks]
+                results['masks'] = list(results['masks'].masks)
 
         return results, ori_masks
 
@@ -1587,8 +1582,7 @@ class Albu(BaseTransform):
         return results
 
     def __repr__(self) -> str:
-        repr_str = self.__class__.__name__ + f'(transforms={self.transforms})'
-        return repr_str
+        return f'{self.__class__.__name__}(transforms={self.transforms})'
 
 
 @TRANSFORMS.register_module()
@@ -1777,10 +1771,12 @@ class RandomCenterCropPad(BaseTransform):
             mask (numpy array, (N,)): Each box is inside or outside the patch.
         """
         center = boxes.centers.numpy()
-        mask = (center[:, 0] > patch[0]) * (center[:, 1] > patch[1]) * (
-            center[:, 0] < patch[2]) * (
-                center[:, 1] < patch[3])
-        return mask
+        return (
+            (center[:, 0] > patch[0])
+            * (center[:, 1] > patch[1])
+            * (center[:, 0] < patch[2])
+            * (center[:, 1] < patch[3])
+        )
 
     def _crop_image_and_paste(self, image, center, size):
         """Crop image with a given center and size, then paste the cropped
@@ -1852,7 +1848,7 @@ class RandomCenterCropPad(BaseTransform):
             h_border = self._get_border(self.border, h)
             w_border = self._get_border(self.border, w)
 
-            for i in range(50):
+            for _ in range(50):
                 center_x = random.randint(low=w_border, high=w - w_border)
                 center_y = random.randint(low=h_border, high=h - h_border)
 
@@ -1894,7 +1890,7 @@ class RandomCenterCropPad(BaseTransform):
                 if results.get('gt_ignore_flags', None) is not None:
                     gt_ignore_flags = results['gt_ignore_flags'][mask]
                     results['gt_ignore_flags'] = \
-                        gt_ignore_flags[keep]
+                            gt_ignore_flags[keep]
 
                 # labels
                 if results.get('gt_bboxes_labels', None) is not None:
@@ -1948,10 +1944,7 @@ class RandomCenterCropPad(BaseTransform):
             ' please set "to_float32=True" in "LoadImageFromFile" pipeline')
         h, w, c = img.shape
         assert c == len(self.mean)
-        if self.test_mode:
-            return self._test_aug(results)
-        else:
-            return self._train_aug(results)
+        return self._test_aug(results) if self.test_mode else self._train_aug(results)
 
     def __repr__(self):
         repr_str = self.__class__.__name__
@@ -2151,8 +2144,7 @@ class Mosaic(BaseTransform):
             list: indexes.
         """
 
-        indexes = [random.randint(0, len(dataset)) for _ in range(3)]
-        return indexes
+        return [random.randint(0, len(dataset)) for _ in range(3)]
 
     @autocast_box_type()
     def transform(self, results: dict) -> dict:
@@ -2265,43 +2257,43 @@ class Mosaic(BaseTransform):
                 - paste_coord (tuple): paste corner coordinate in mosaic image.
                 - crop_coord (tuple): crop corner coordinate in mosaic image.
         """
-        assert loc in ('top_left', 'top_right', 'bottom_left', 'bottom_right')
-        if loc == 'top_left':
+        assert loc in {'top_left', 'top_right', 'bottom_left', 'bottom_right'}
+        if loc == 'bottom_left':
+            # index2 to bottom left part of image
+            x1, y1, x2, y2 = max(center_position_xy[0] - img_shape_wh[0], 0), \
+                                 center_position_xy[1], \
+                                 center_position_xy[0], \
+                                 min(self.img_scale[1] * 2, center_position_xy[1] +
+                                 img_shape_wh[1])
+            crop_coord = img_shape_wh[0] - (x2 - x1), 0, img_shape_wh[0], min(
+                y2 - y1, img_shape_wh[1])
+
+        elif loc == 'top_left':
             # index0 to top left part of image
             x1, y1, x2, y2 = max(center_position_xy[0] - img_shape_wh[0], 0), \
-                             max(center_position_xy[1] - img_shape_wh[1], 0), \
-                             center_position_xy[0], \
-                             center_position_xy[1]
+                                 max(center_position_xy[1] - img_shape_wh[1], 0), \
+                                 center_position_xy[0], \
+                                 center_position_xy[1]
             crop_coord = img_shape_wh[0] - (x2 - x1), img_shape_wh[1] - (
                 y2 - y1), img_shape_wh[0], img_shape_wh[1]
 
         elif loc == 'top_right':
             # index1 to top right part of image
             x1, y1, x2, y2 = center_position_xy[0], \
-                             max(center_position_xy[1] - img_shape_wh[1], 0), \
-                             min(center_position_xy[0] + img_shape_wh[0],
+                                 max(center_position_xy[1] - img_shape_wh[1], 0), \
+                                 min(center_position_xy[0] + img_shape_wh[0],
                                  self.img_scale[0] * 2), \
-                             center_position_xy[1]
+                                 center_position_xy[1]
             crop_coord = 0, img_shape_wh[1] - (y2 - y1), min(
                 img_shape_wh[0], x2 - x1), img_shape_wh[1]
-
-        elif loc == 'bottom_left':
-            # index2 to bottom left part of image
-            x1, y1, x2, y2 = max(center_position_xy[0] - img_shape_wh[0], 0), \
-                             center_position_xy[1], \
-                             center_position_xy[0], \
-                             min(self.img_scale[1] * 2, center_position_xy[1] +
-                                 img_shape_wh[1])
-            crop_coord = img_shape_wh[0] - (x2 - x1), 0, img_shape_wh[0], min(
-                y2 - y1, img_shape_wh[1])
 
         else:
             # index3 to bottom right part of image
             x1, y1, x2, y2 = center_position_xy[0], \
-                             center_position_xy[1], \
-                             min(center_position_xy[0] + img_shape_wh[0],
+                                 center_position_xy[1], \
+                                 min(center_position_xy[0] + img_shape_wh[0],
                                  self.img_scale[0] * 2), \
-                             min(self.img_scale[1] * 2, center_position_xy[1] +
+                                 min(self.img_scale[1] * 2, center_position_xy[1] +
                                  img_shape_wh[1])
             crop_coord = 0, 0, min(img_shape_wh[0],
                                    x2 - x1), min(y2 - y1, img_shape_wh[1])
@@ -2407,7 +2399,7 @@ class MixUp(BaseTransform):
             list: indexes.
         """
 
-        for i in range(self.max_iters):
+        for _ in range(self.max_iters):
             index = random.randint(0, len(dataset))
             gt_bboxes_i = dataset[index]['gt_bboxes']
             if len(gt_bboxes_i) != 0:
@@ -2627,9 +2619,7 @@ class RandomAffine(BaseTransform):
                                  self.max_translate_ratio) * height
         translate_matrix = self._get_translation_matrix(trans_x, trans_y)
 
-        warp_matrix = (
-            translate_matrix @ shear_matrix @ rotation_matrix @ scaling_matrix)
-        return warp_matrix
+        return translate_matrix @ shear_matrix @ rotation_matrix @ scaling_matrix
 
     @autocast_box_type()
     def transform(self, results: dict) -> dict:
@@ -2679,34 +2669,41 @@ class RandomAffine(BaseTransform):
     @staticmethod
     def _get_rotation_matrix(rotate_degrees: float) -> np.ndarray:
         radian = math.radians(rotate_degrees)
-        rotation_matrix = np.array(
-            [[np.cos(radian), -np.sin(radian), 0.],
-             [np.sin(radian), np.cos(radian), 0.], [0., 0., 1.]],
-            dtype=np.float32)
-        return rotation_matrix
+        return np.array(
+            [
+                [np.cos(radian), -np.sin(radian), 0.0],
+                [np.sin(radian), np.cos(radian), 0.0],
+                [0.0, 0.0, 1.0],
+            ],
+            dtype=np.float32,
+        )
 
     @staticmethod
     def _get_scaling_matrix(scale_ratio: float) -> np.ndarray:
-        scaling_matrix = np.array(
-            [[scale_ratio, 0., 0.], [0., scale_ratio, 0.], [0., 0., 1.]],
-            dtype=np.float32)
-        return scaling_matrix
+        return np.array(
+            [[scale_ratio, 0.0, 0.0], [0.0, scale_ratio, 0.0], [0.0, 0.0, 1.0]],
+            dtype=np.float32,
+        )
 
     @staticmethod
     def _get_shear_matrix(x_shear_degrees: float,
                           y_shear_degrees: float) -> np.ndarray:
         x_radian = math.radians(x_shear_degrees)
         y_radian = math.radians(y_shear_degrees)
-        shear_matrix = np.array([[1, np.tan(x_radian), 0.],
-                                 [np.tan(y_radian), 1, 0.], [0., 0., 1.]],
-                                dtype=np.float32)
-        return shear_matrix
+        return np.array(
+            [
+                [1, np.tan(x_radian), 0.0],
+                [np.tan(y_radian), 1, 0.0],
+                [0.0, 0.0, 1.0],
+            ],
+            dtype=np.float32,
+        )
 
     @staticmethod
     def _get_translation_matrix(x: float, y: float) -> np.ndarray:
-        translation_matrix = np.array([[1, 0., x], [0., 1, y], [0., 0., 1.]],
-                                      dtype=np.float32)
-        return translation_matrix
+        return np.array(
+            [[1, 0.0, x], [0.0, 1, y], [0.0, 0.0, 1.0]], dtype=np.float32
+        )
 
 
 @TRANSFORMS.register_module()
@@ -3214,8 +3211,7 @@ class CachedMosaic(Mosaic):
             list: indexes.
         """
 
-        indexes = [random.randint(0, len(cache) - 1) for _ in range(3)]
-        return indexes
+        return [random.randint(0, len(cache) - 1) for _ in range(3)]
 
     @autocast_box_type()
     def transform(self, results: dict) -> dict:
@@ -3249,7 +3245,7 @@ class CachedMosaic(Mosaic):
         mosaic_bboxes_labels = []
         mosaic_ignore_flags = []
         mosaic_masks = []
-        with_mask = True if 'gt_masks' in results else False
+        with_mask = 'gt_masks' in results
 
         if len(results['img'].shape) == 3:
             mosaic_img = np.full(
@@ -3465,7 +3461,7 @@ class CachedMixUp(BaseTransform):
             int: index.
         """
 
-        for i in range(self.max_iters):
+        for _ in range(self.max_iters):
             index = random.randint(0, len(cache) - 1)
             gt_bboxes_i = cache[index]['gt_bboxes']
             if len(gt_bboxes_i) != 0:

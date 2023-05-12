@@ -52,8 +52,5 @@ class YOLOXModeSwitchHook(Hook):
                 self._restart_dataloader = True
             runner.logger.info('Add additional L1 loss now!')
             model.bbox_head.use_l1 = True
-        else:
-            # Once the restart is complete, we need to restore
-            # the initialization flag.
-            if self._restart_dataloader:
-                train_loader._DataLoader__initialized = True
+        elif self._restart_dataloader:
+            train_loader._DataLoader__initialized = True

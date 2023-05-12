@@ -82,14 +82,14 @@ class InstaBoost(BaseTransform):
         anns = []
         ignore_anns = []
         for instance in results['instances']:
-            label = instance['bbox_label']
             bbox = instance['bbox']
-            mask = instance['mask']
             x1, y1, x2, y2 = bbox
             # assert (x2 - x1) >= 1 and (y2 - y1) >= 1
             bbox = [x1, y1, x2 - x1, y2 - y1]
 
             if instance['ignore_flag'] == 0:
+                label = instance['bbox_label']
+                mask = instance['mask']
                 anns.append({
                     'category_id': label,
                     'segmentation': mask,

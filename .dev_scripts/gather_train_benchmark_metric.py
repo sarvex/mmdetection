@@ -37,8 +37,7 @@ def parse_args():
     parser.add_argument(
         '--ncol', type=int, help='Number of column to be modified or appended')
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 if __name__ == '__main__':
@@ -57,10 +56,8 @@ if __name__ == '__main__':
                 'Please use “pip install xlutils==2.0.0” to install')
         readbook = xlrd.open_workbook(args.excel)
         sheet = readbook.sheet_by_name('Sheet1')
-        sheet_info = {}
         total_nrows = sheet.nrows
-        for i in range(3, sheet.nrows):
-            sheet_info[sheet.row_values(i)[0]] = i
+        sheet_info = {sheet.row_values(i)[0]: i for i in range(3, sheet.nrows)}
         xlrw = copy(readbook)
         table = xlrw.get_sheet(0)
 
@@ -70,7 +67,7 @@ if __name__ == '__main__':
     result_dict = {}
     with open(args.txt_path, 'r') as f:
         model_cfgs = f.readlines()
-        for i, config in enumerate(model_cfgs):
+        for config in model_cfgs:
             config = config.strip()
             if len(config) == 0:
                 continue
@@ -90,7 +87,7 @@ if __name__ == '__main__':
                     if 'proposal_fast' in key:
                         final_results_out.append('AR@1000')  # RPN
                     elif 'mAP' not in key:
-                        final_results_out.append(key + '_mAP')
+                        final_results_out.append(f'{key}_mAP')
 
                 # 2 determine whether total_epochs ckpt exists
                 ckpt_path = f'epoch_{total_epochs}.pth'
@@ -123,8 +120,7 @@ if __name__ == '__main__':
                         else:
                             metrics = f'{model_performance["bbox_mAP"]}'
 
-                        row_num = sheet_info.get(config, None)
-                        if row_num:
+                        if row_num := sheet_info.get(config, None):
                             table.write(row_num, args.ncol, metrics)
                         else:
                             table.write(total_nrows, 0, config)

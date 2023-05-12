@@ -103,14 +103,19 @@ class CrowdHumanMetric(BaseMetric):
                 'https://github.com/open-mmlab/mmdetection/blob/main/configs/_base_/datasets/coco_detection.py'  # noqa: E501
             )
 
-        assert eval_mode in [0, 1, 2], \
-            "Unknown eval mode. mr_ref should be one of '0', '1', '2'."
+        assert eval_mode in {
+            0,
+            1,
+            2,
+        }, "Unknown eval mode. mr_ref should be one of '0', '1', '2'."
         assert compare_matching_method is None or \
-               compare_matching_method == 'VOC', \
-               'The alternative compare_matching_method is VOC.' \
-               'This parameter defaults to CALTECH(None)'
-        assert mr_ref == 'CALTECH_-2' or mr_ref == 'CALTECH_-4', \
-            "mr_ref should be one of 'CALTECH_-2', 'CALTECH_-4'."
+                   compare_matching_method == 'VOC', \
+                   'The alternative compare_matching_method is VOC.' \
+                   'This parameter defaults to CALTECH(None)'
+        assert mr_ref in {
+            'CALTECH_-2',
+            'CALTECH_-4',
+        }, "mr_ref should be one of 'CALTECH_-2', 'CALTECH_-4'."
         self.eval_mode = eval_mode
         self.iou_thres = iou_thres
         self.compare_matching_method = compare_matching_method
@@ -122,20 +127,14 @@ class CrowdHumanMetric(BaseMetric):
         """Dump the detection results to a json file."""
         result_file_path = f'{outfile_prefix}.json'
         bbox_json_results = []
-        for i, result in enumerate(results):
+        for result in results:
             ann, pred = result
-            dump_dict = dict()
-            dump_dict['ID'] = ann['ID']
-            dump_dict['width'] = ann['width']
-            dump_dict['height'] = ann['height']
+            dump_dict = {'ID': ann['ID'], 'width': ann['width'], 'height': ann['height']}
             dtboxes = []
             bboxes = pred.tolist()
-            for _, single_bbox in enumerate(bboxes):
-                temp_dict = dict()
+            for single_bbox in bboxes:
                 x1, y1, x2, y2, score = single_bbox
-                temp_dict['box'] = [x1, y1, x2 - x1, y2 - y1]
-                temp_dict['score'] = score
-                temp_dict['tag'] = 1
+                temp_dict = {'box': [x1, y1, x2 - x1, y2 - y1], 'score': score, 'tag': 1}
                 dtboxes.append(temp_dict)
             dump_dict['dtboxes'] = dtboxes
             bbox_json_results.append(dump_dict)
@@ -154,10 +153,11 @@ class CrowdHumanMetric(BaseMetric):
                 contain annotations and predictions.
         """
         for data_sample in data_samples:
-            ann = dict()
-            ann['ID'] = data_sample['img_id']
-            ann['width'] = data_sample['ori_shape'][1]
-            ann['height'] = data_sample['ori_shape'][0]
+            ann = {
+                'ID': data_sample['img_id'],
+                'width': data_sample['ori_shape'][1],
+                'height': data_sample['ori_shape'][0],
+            }
             pred_bboxes = data_sample['pred_instances']['bboxes'].cpu().numpy()
             pred_scores = data_sample['pred_instances']['scores'].cpu().numpy()
 
@@ -198,8 +198,8 @@ class CrowdHumanMetric(BaseMetric):
 
         if 'AP' in self.metrics or 'MR' in self.metrics:
             score_list = self.compare(eval_samples)
-            gt_num = sum([eval_samples[i].gt_num for i in eval_samples])
-            ign_num = sum([eval_samples[i].ign_num for i in eval_samples])
+            gt_num = sum(eval_samples[i].gt_num for i in eval_samples)
+            ign_num = sum(eval_samples[i].ign_num for i in eval_samples)
             gt_num = gt_num - ign_num
             img_num = len(eval_samples)
 
@@ -208,12 +208,12 @@ class CrowdHumanMetric(BaseMetric):
             if metric == 'AP':
                 AP = self.eval_ap(score_list, gt_num, img_num)
                 eval_results['mAP'] = float(f'{round(AP, 4)}')
-            if metric == 'MR':
-                MR = self.eval_mr(score_list, gt_num, img_num)
-                eval_results['mMR'] = float(f'{round(MR, 4)}')
-            if metric == 'JI':
+            elif metric == 'JI':
                 JI = self.eval_ji(eval_samples)
                 eval_results['JI'] = float(f'{round(JI, 4)}')
+            elif metric == 'MR':
+                MR = self.eval_mr(score_list, gt_num, img_num)
+                eval_results['mMR'] = float(f'{round(MR, 4)}')
         if tmp_dir is not None:
             tmp_dir.cleanup()
 
@@ -233,10 +233,10 @@ class CrowdHumanMetric(BaseMetric):
         gt_records = [json.loads(line) for line in gt_str]
 
         pred_records = load(result_file, backend_args=self.backend_args)
-        eval_samples = dict()
+        eval_samples = {}
         for gt_record, pred_record in zip(gt_records, pred_records):
             assert gt_record['ID'] == pred_record['ID'], \
-                'please set val_dataloader.sampler.shuffle=False and try again'
+                    'please set val_dataloader.sampler.shuffle=False and try again'
             eval_samples[pred_record['ID']] = Image(self.eval_mode)
             eval_samples[pred_record['ID']].load(gt_record, 'box', None,
                                                  PERSON_CLASSES, True)
@@ -256,7 +256,7 @@ class CrowdHumanMetric(BaseMetric):
             a list of tuples (dtbox, label, imgID) in the descending
             sort of dtbox.score.
         """
-        score_list = list()
+        score_list = []
         for id in samples:
             if self.compare_matching_method == 'VOC':
                 result = samples[id].compare_voc(self.iou_thres)
@@ -293,7 +293,7 @@ class CrowdHumanMetric(BaseMetric):
             return area
 
         tp, fp = 0.0, 0.0
-        rpX, rpY = list(), list()
+        rpX, rpY = [], []
 
         fpn = []
         recalln = []
@@ -354,7 +354,7 @@ class CrowdHumanMetric(BaseMetric):
             ]
 
         tp, fp = 0.0, 0.0
-        fppiX, fppiY = list(), list()
+        fppiX, fppiY = [], []
         for i, item in enumerate(score_list):
             if item[1] == 1:
                 tp += 1.0
@@ -368,7 +368,7 @@ class CrowdHumanMetric(BaseMetric):
             fppiX.append(fppi)
             fppiY.append(missrate)
 
-        score = list()
+        score = []
         for pos in ref:
             argmin = _find_gt(fppiX, pos)
             if argmin >= 0:
@@ -405,7 +405,7 @@ class CrowdHumanMetric(BaseMetric):
                     args=(result_queue, sample_data, score_thr))
                 p.start()
                 procs.append(p)
-            for i in range(total):
+            for _ in range(total):
                 t = result_queue.get()
                 results.append(t)
             for p in procs:
@@ -470,16 +470,13 @@ class CrowdHumanMetric(BaseMetric):
     def gather(results):
         """Integrate test results."""
         assert len(results)
-        img_num = 0
-        for result in results:
-            if result['n'] != 0 or result['m'] != 0:
-                img_num += 1
+        img_num = sum(1 for result in results if result['n'] != 0 or result['m'] != 0)
         mean_ratio = np.sum([rb['ratio'] for rb in results]) / img_num
         valids = np.sum([rb['k'] for rb in results])
         total = np.sum([rb['n'] for rb in results])
         gtn = np.sum([rb['m'] for rb in results])
         line = 'mean_ratio:{:.4f}, valids:{}, total:{}, gtn:{}'\
-            .format(mean_ratio, valids, total, gtn)
+                .format(mean_ratio, valids, total, gtn)
         return line, mean_ratio
 
     def compute_ji_matching(self, dt_boxes, gt_boxes):
@@ -494,18 +491,18 @@ class CrowdHumanMetric(BaseMetric):
         """
         assert dt_boxes.shape[-1] > 3 and gt_boxes.shape[-1] > 3
         if dt_boxes.shape[0] < 1 or gt_boxes.shape[0] < 1:
-            return list()
+            return []
 
         ious = bbox_overlaps(dt_boxes, gt_boxes, mode='iou')
         input_ = copy.deepcopy(ious)
         input_[input_ < self.iou_thres] = 0
         match_scipy = maximum_bipartite_matching(
             csr_matrix(input_), perm_type='column')
-        matches_ = []
-        for i in range(len(match_scipy)):
-            if match_scipy[i] != -1:
-                matches_.append((i, int(match_scipy[i])))
-        return matches_
+        return [
+            (i, int(match_scipy[i]))
+            for i in range(len(match_scipy))
+            if match_scipy[i] != -1
+        ]
 
     def get_ignores(self, dt_boxes, gt_boxes):
         """Get the number of ignore bboxes."""
@@ -641,15 +638,19 @@ class Image(object):
             else:
                 body_tag = -1
                 head_tag = -1
-            if 'extra' in rb:
-                if 'ignore' in rb['extra']:
-                    if rb['extra']['ignore'] != 0:
-                        body_tag = -1
-                        head_tag = -1
-            if 'head_attr' in rb:
-                if 'ignore' in rb['head_attr']:
-                    if rb['head_attr']['ignore'] != 0:
-                        head_tag = -1
+            if (
+                'extra' in rb
+                and 'ignore' in rb['extra']
+                and rb['extra']['ignore'] != 0
+            ):
+                body_tag = -1
+                head_tag = -1
+            if (
+                'head_attr' in rb
+                and 'ignore' in rb['head_attr']
+                and rb['head_attr']['ignore'] != 0
+            ):
+                head_tag = -1
             head_bbox.append(np.hstack((rb['hbox'], head_tag)))
             body_bbox.append(np.hstack((rb['fbox'], body_tag)))
         head_bbox = np.array(head_bbox)
@@ -664,32 +665,35 @@ class Image(object):
         assert key_name in dict_input
         if len(dict_input[key_name]) < 1:
             return np.empty([0, 5])
-        else:
-            assert key_box in dict_input[key_name][0]
-            if key_score:
-                assert key_score in dict_input[key_name][0]
-            if key_tag:
-                assert key_tag in dict_input[key_name][0]
+        assert key_box in dict_input[key_name][0]
         if key_score:
-            if key_tag:
-                bboxes = np.vstack([
-                    np.hstack((rb[key_box], rb[key_score], rb[key_tag]))
-                    for rb in dict_input[key_name]
-                ])
-            else:
-                bboxes = np.vstack([
-                    np.hstack((rb[key_box], rb[key_score]))
-                    for rb in dict_input[key_name]
-                ])
+            assert key_score in dict_input[key_name][0]
+        if key_tag:
+            assert key_tag in dict_input[key_name][0]
+        if key_score:
+            bboxes = (
+                np.vstack(
+                    [
+                        np.hstack((rb[key_box], rb[key_score], rb[key_tag]))
+                        for rb in dict_input[key_name]
+                    ]
+                )
+                if key_tag
+                else np.vstack(
+                    [
+                        np.hstack((rb[key_box], rb[key_score]))
+                        for rb in dict_input[key_name]
+                    ]
+                )
+            )
+        elif key_tag:
+            bboxes = np.vstack([
+                np.hstack((rb[key_box], rb[key_tag]))
+                for rb in dict_input[key_name]
+            ])
         else:
-            if key_tag:
-                bboxes = np.vstack([
-                    np.hstack((rb[key_box], rb[key_tag]))
-                    for rb in dict_input[key_name]
-                ])
-            else:
-                bboxes = np.vstack(
-                    [rb[key_box] for rb in dict_input[key_name]])
+            bboxes = np.vstack(
+                [rb[key_box] for rb in dict_input[key_name]])
         bboxes[:, 2:4] += bboxes[:, :2]
         return bboxes
 
@@ -734,13 +738,13 @@ class Image(object):
             sort of dtbox.score.
         """
         if self.dt_boxes is None:
-            return list()
+            return []
         dtboxes = self.dt_boxes
-        gtboxes = self.gt_boxes if self.gt_boxes is not None else list()
+        gtboxes = self.gt_boxes if self.gt_boxes is not None else []
         dtboxes.sort(key=lambda x: x.score, reverse=True)
         gtboxes.sort(key=lambda x: x.ign)
 
-        score_list = list()
+        score_list = []
         for i, dt in enumerate(dtboxes):
             maxpos = -1
             maxiou = thres
@@ -776,22 +780,21 @@ class Image(object):
             sort of dtbox.score.
         """
         if self.dt_boxes is None or self.gt_boxes is None:
-            return list()
+            return []
 
-        dtboxes = self.dt_boxes if self.dt_boxes is not None else list()
-        gtboxes = self.gt_boxes if self.gt_boxes is not None else list()
+        dtboxes = self.dt_boxes if self.dt_boxes is not None else []
+        gtboxes = self.gt_boxes if self.gt_boxes is not None else []
         dt_matched = np.zeros(dtboxes.shape[0])
         gt_matched = np.zeros(gtboxes.shape[0])
 
         dtboxes = np.array(sorted(dtboxes, key=lambda x: x[-1], reverse=True))
         gtboxes = np.array(sorted(gtboxes, key=lambda x: x[-1], reverse=True))
-        if len(dtboxes):
-            overlap_iou = bbox_overlaps(dtboxes, gtboxes, mode='iou')
-            overlap_ioa = bbox_overlaps(dtboxes, gtboxes, mode='iof')
-        else:
-            return list()
+        if not len(dtboxes):
+            return []
 
-        score_list = list()
+        overlap_iou = bbox_overlaps(dtboxes, gtboxes, mode='iou')
+        overlap_ioa = bbox_overlaps(dtboxes, gtboxes, mode='iof')
+        score_list = []
         for i, dt in enumerate(dtboxes):
             maxpos = -1
             maxiou = thres
@@ -806,11 +809,10 @@ class Image(object):
                 else:
                     if maxpos >= 0:
                         break
-                    else:
-                        overlap = overlap_ioa[i][j]
-                        if overlap > thres:
-                            maxiou = overlap
-                            maxpos = j
+                    overlap = overlap_ioa[i][j]
+                    if overlap > thres:
+                        maxiou = overlap
+                        maxpos = j
             if maxpos >= 0:
                 if gtboxes[maxpos, -1] > 0:
                     gt_matched[maxpos] = 1

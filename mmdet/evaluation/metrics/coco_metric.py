@@ -180,8 +180,7 @@ class CocoMetric(BaseMetric):
 
         recalls = eval_recalls(
             gt_bboxes, pred_bboxes, proposal_nums, iou_thrs, logger=logger)
-        ar = recalls.mean(axis=1)
-        return ar
+        return recalls.mean(axis=1)
 
     def xyxy2xywh(self, bbox: np.ndarray) -> list:
         """Convert ``xyxy`` style bounding boxes to ``xywh`` style for COCO
@@ -232,10 +231,11 @@ class CocoMetric(BaseMetric):
             scores = result['scores']
             # bbox results
             for i, label in enumerate(labels):
-                data = dict()
-                data['image_id'] = image_id
-                data['bbox'] = self.xyxy2xywh(bboxes[i])
-                data['score'] = float(scores[i])
+                data = {
+                    'image_id': image_id,
+                    'bbox': self.xyxy2xywh(bboxes[i]),
+                    'score': float(scores[i]),
+                }
                 data['category_id'] = self.cat_ids[label]
                 bbox_json_results.append(data)
 
@@ -246,7 +246,7 @@ class CocoMetric(BaseMetric):
             masks = result['masks']
             mask_scores = result.get('mask_scores', scores)
             for i, label in enumerate(labels):
-                data = dict()
+                data = {}
                 data['image_id'] = image_id
                 data['bbox'] = self.xyxy2xywh(bboxes[i])
                 data['score'] = float(mask_scores[i])
@@ -256,9 +256,10 @@ class CocoMetric(BaseMetric):
                 data['segmentation'] = masks[i]
                 segm_json_results.append(data)
 
-        result_files = dict()
-        result_files['bbox'] = f'{outfile_prefix}.bbox.json'
-        result_files['proposal'] = f'{outfile_prefix}.bbox.json'
+        result_files = {
+            'bbox': f'{outfile_prefix}.bbox.json',
+            'proposal': f'{outfile_prefix}.bbox.json',
+        }
         dump(bbox_json_results, result_files['bbox'])
 
         if segm_json_results is not None:
@@ -331,7 +332,7 @@ class CocoMetric(BaseMetric):
             categories=categories,
             licenses=None,
         )
-        if len(annotations) > 0:
+        if annotations:
             coco_json['annotations'] = annotations
         converted_json_path = f'{outfile_prefix}.gt.json'
         dump(coco_json, converted_json_path)
@@ -350,10 +351,11 @@ class CocoMetric(BaseMetric):
                 contain annotations and predictions.
         """
         for data_sample in data_samples:
-            result = dict()
             pred = data_sample['pred_instances']
-            result['img_id'] = data_sample['img_id']
-            result['bboxes'] = pred['bboxes'].cpu().numpy()
+            result = {
+                'img_id': data_sample['img_id'],
+                'bboxes': pred['bboxes'].cpu().numpy(),
+            }
             result['scores'] = pred['scores'].cpu().numpy()
             result['labels'] = pred['labels'].cpu().numpy()
             # encode mask to RLE
@@ -366,15 +368,16 @@ class CocoMetric(BaseMetric):
                 result['mask_scores'] = pred['mask_scores'].cpu().numpy()
 
             # parse gt
-            gt = dict()
-            gt['width'] = data_sample['ori_shape'][1]
-            gt['height'] = data_sample['ori_shape'][0]
-            gt['img_id'] = data_sample['img_id']
+            gt = {
+                'width': data_sample['ori_shape'][1],
+                'height': data_sample['ori_shape'][0],
+                'img_id': data_sample['img_id'],
+            }
             if self._coco_api is None:
                 # TODO: Need to refactor to support LoadAnnotations
                 assert 'instances' in data_sample, \
-                    'ground truth is required for evaluation when ' \
-                    '`ann_file` is not provided'
+                        'ground truth is required for evaluation when ' \
+                        '`ann_file` is not provided'
                 gt['anns'] = data_sample['instances']
             # add converted result to the results list
             self.results.append((gt, result))
@@ -519,38 +522,27 @@ class CocoMetric(BaseMetric):
 
                     results_per_category = []
                     for idx, cat_id in enumerate(self.cat_ids):
-                        t = []
                         # area range index 0: all area ranges
                         # max dets index -1: typically 100 per image
                         nm = self._coco_api.loadCats(cat_id)[0]
                         precision = precisions[:, :, idx, 0, -1]
                         precision = precision[precision > -1]
-                        if precision.size:
-                            ap = np.mean(precision)
-                        else:
-                            ap = float('nan')
-                        t.append(f'{nm["name"]}')
-                        t.append(f'{round(ap, 3)}')
+                        ap = np.mean(precision) if precision.size else float('nan')
+                        t = [f'{nm["name"]}', f'{round(ap, 3)}']
                         eval_results[f'{nm["name"]}_precision'] = round(ap, 3)
 
                         # indexes of IoU  @50 and @75
                         for iou in [0, 5]:
                             precision = precisions[iou, :, idx, 0, -1]
                             precision = precision[precision > -1]
-                            if precision.size:
-                                ap = np.mean(precision)
-                            else:
-                                ap = float('nan')
+                            ap = np.mean(precision) if precision.size else float('nan')
                             t.append(f'{round(ap, 3)}')
 
                         # indexes of area of small, median and large
                         for area in [1, 2, 3]:
                             precision = precisions[:, :, idx, area, -1]
                             precision = precision[precision > -1]
-                            if precision.size:
-                                ap = np.mean(precision)
-                            else:
-                                ap = float('nan')
+                            ap = np.mean(precision) if precision.size else float('nan')
                             t.append(f'{round(ap, 3)}')
                         results_per_category.append(tuple(t))
 
@@ -566,7 +558,7 @@ class CocoMetric(BaseMetric):
                         for i in range(num_columns)
                     ])
                     table_data = [headers]
-                    table_data += [result for result in results_2d]
+                    table_data += list(results_2d)
                     table = AsciiTable(table_data)
                     logger.info('\n' + table.table)
 

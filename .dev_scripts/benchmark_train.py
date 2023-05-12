@@ -95,9 +95,8 @@ def fast_train_model(config_name, args, logger=None):
         cfg.custom_hooks = custom_hooks
 
     # TODO: temporary plan
-    if 'visualizer' in cfg:
-        if 'name' in cfg.visualizer:
-            del cfg.visualizer.name
+    if 'visualizer' in cfg and 'name' in cfg.visualizer:
+        del cfg.visualizer.name
 
     # enable automatic-mixed-precision training
     if args.amp is True:
@@ -114,7 +113,6 @@ def fast_train_model(config_name, args, logger=None):
             cfg.optim_wrapper.type = 'AmpOptimWrapper'
             cfg.optim_wrapper.loss_scale = 'dynamic'
 
-    # enable automatically scaling LR
     if args.auto_scale_lr:
         if 'auto_scale_lr' in cfg and \
                 'enable' in cfg.auto_scale_lr and \
@@ -132,14 +130,7 @@ def fast_train_model(config_name, args, logger=None):
     cfg.resume = args.resume
 
     # build the runner from config
-    if 'runner_type' not in cfg:
-        # build the default runner
-        runner = Runner.from_cfg(cfg)
-    else:
-        # build customized runner from the registry
-        # if 'runner_type' is set in the cfg
-        runner = RUNNERS.build(cfg)
-
+    runner = RUNNERS.build(cfg) if 'runner_type' in cfg else Runner.from_cfg(cfg)
     runner.train()
 
 

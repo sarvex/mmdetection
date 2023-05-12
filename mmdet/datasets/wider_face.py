@@ -27,7 +27,7 @@ class WIDERFaceDataset(XMLDataset):
             list[dict]: Annotation info from XML file.
         """
         assert self._metainfo.get('classes', None) is not None, \
-            'classes in `XMLDataset` can not be None.'
+                'classes in `XMLDataset` can not be None.'
         self.cat2label = {
             cat: i
             for i, cat in enumerate(self._metainfo['classes'])
@@ -41,9 +41,7 @@ class WIDERFaceDataset(XMLDataset):
             prog_bar = ProgressBar(len(img_ids))
 
         for img_id in img_ids:
-            raw_img_info = {}
-            raw_img_info['img_id'] = img_id
-            raw_img_info['file_name'] = f'{img_id}.jpg'
+            raw_img_info = {'img_id': img_id, 'file_name': f'{img_id}.jpg'}
             parsed_data_info = self.parse_data_info(raw_img_info)
             data_list.append(parsed_data_info)
 
@@ -61,13 +59,10 @@ class WIDERFaceDataset(XMLDataset):
         Returns:
             Union[dict, List[dict]]: Parsed annotation.
         """
-        data_info = {}
         img_id = img_info['img_id']
         xml_path = osp.join(self.data_prefix['img'], 'Annotations',
                             f'{img_id}.xml')
-        data_info['img_id'] = img_id
-        data_info['xml_path'] = xml_path
-
+        data_info = {'img_id': img_id, 'xml_path': xml_path}
         # deal with xml file
         with get_local_path(
                 xml_path, backend_args=self.backend_args) as local_path:

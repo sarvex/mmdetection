@@ -31,8 +31,7 @@ def _get_config_module(fname):
     """Load a configuration as a python module."""
     config_dpath = _get_config_directory()
     config_fpath = join(config_dpath, fname)
-    config_mod = Config.fromfile(config_fpath)
-    return config_mod
+    return Config.fromfile(config_fpath)
 
 
 def _get_detector_cfg(fname):
@@ -121,11 +120,11 @@ def _check_backbone(config, print_cfg=True):
         init_flag = False
     if init_flag:
         checkpoint = CheckpointLoader.load_checkpoint(init_cfg.checkpoint)
-        if 'state_dict' in checkpoint:
-            state_dict = checkpoint['state_dict']
-        else:
-            state_dict = checkpoint
-
+        state_dict = (
+            checkpoint['state_dict']
+            if 'state_dict' in checkpoint
+            else checkpoint
+        )
         model = MODELS.build(cfg.model)
         model.init_weights()
 
@@ -138,11 +137,10 @@ def _check_backbone(config, print_cfg=True):
             print('-' * 10 + 'Successfully load checkpoint' + '-' * 10 +
                   '\n', )
             return None
-    else:
-        if print_cfg:
-            print(config + '\n' + '-' * 10 +
-                  'config file do not have init_cfg' + '-' * 10 + '\n')
-            return config
+    elif print_cfg:
+        print(config + '\n' + '-' * 10 +
+              'config file do not have init_cfg' + '-' * 10 + '\n')
+        return config
 
 
 @pytest.mark.parametrize('config', _traversed_config_file())

@@ -157,7 +157,7 @@ class ResLayer(Sequential):
                  **kwargs):
         self.block = block
         assert downsample_first, f'downsample_first={downsample_first} is ' \
-                                 'not supported in DetectoRS'
+                                     'not supported in DetectoRS'
 
         downsample = None
         if stride != 1 or inplanes != planes * block.expansion:
@@ -183,8 +183,7 @@ class ResLayer(Sequential):
             ])
             downsample = nn.Sequential(*downsample)
 
-        layers = []
-        layers.append(
+        layers = [
             block(
                 inplanes=inplanes,
                 planes=planes,
@@ -193,18 +192,21 @@ class ResLayer(Sequential):
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
                 rfp_inplanes=rfp_inplanes,
-                **kwargs))
+                **kwargs
+            )
+        ]
         inplanes = planes * block.expansion
-        for _ in range(1, num_blocks):
-            layers.append(
-                block(
-                    inplanes=inplanes,
-                    planes=planes,
-                    stride=1,
-                    conv_cfg=conv_cfg,
-                    norm_cfg=norm_cfg,
-                    **kwargs))
-
+        layers.extend(
+            block(
+                inplanes=inplanes,
+                planes=planes,
+                stride=1,
+                conv_cfg=conv_cfg,
+                norm_cfg=norm_cfg,
+                **kwargs
+            )
+            for _ in range(1, num_blocks)
+        )
         super(ResLayer, self).__init__(*layers)
 
 

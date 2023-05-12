@@ -53,7 +53,7 @@ class VOCMetric(BaseMetric):
                  prefix: Optional[str] = None) -> None:
         super().__init__(collect_device=collect_device, prefix=prefix)
         self.iou_thrs = [iou_thrs] if isinstance(iou_thrs, float) \
-            else iou_thrs
+                else iou_thrs
         self.scale_ranges = scale_ranges
         # voc evaluation metrics
         if not isinstance(metric, str):
@@ -65,8 +65,10 @@ class VOCMetric(BaseMetric):
                 f"metric should be one of 'recall', 'mAP', but got {metric}.")
         self.metric = metric
         self.proposal_nums = proposal_nums
-        assert eval_mode in ['area', '11points'], \
-            'Unrecognized mode, only "area" and "11points" are supported'
+        assert eval_mode in {
+            'area',
+            '11points',
+        }, 'Unrecognized mode, only "area" and "11points" are supported'
         self.eval_mode = eval_mode
 
     # TODO: data_batch is no longer needed, consider adjusting the

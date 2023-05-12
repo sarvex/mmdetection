@@ -57,12 +57,9 @@ def pq_compute_single_core(proc_id,
 
     pq_stat = PQStat()
 
-    idx = 0
-    for gt_ann, pred_ann in annotation_set:
+    for idx, (gt_ann, pred_ann) in enumerate(annotation_set):
         if print_log and idx % 100 == 0:
-            print('Core: {}, {} from {} images processed'.format(
-                proc_id, idx, len(annotation_set)))
-        idx += 1
+            print(f'Core: {proc_id}, {idx} from {len(annotation_set)} images processed')
         # The gt images can be on the local disk or `ceph`, so we use
         # backend here.
         img_bytes = get(
@@ -82,29 +79,25 @@ def pq_compute_single_core(proc_id,
         pred_segms = {el['id']: el for el in pred_ann['segments_info']}
 
         # predicted segments area calculation + prediction sanity checks
-        pred_labels_set = set(el['id'] for el in pred_ann['segments_info'])
+        pred_labels_set = {el['id'] for el in pred_ann['segments_info']}
         labels, labels_cnt = np.unique(pan_pred, return_counts=True)
         for label, label_cnt in zip(labels, labels_cnt):
             if label not in pred_segms:
                 if label == VOID:
                     continue
                 raise KeyError(
-                    'In the image with ID {} segment with ID {} is '
-                    'presented in PNG and not presented in JSON.'.format(
-                        gt_ann['image_id'], label))
+                    f"In the image with ID {gt_ann['image_id']} segment with ID {label} is presented in PNG and not presented in JSON."
+                )
             pred_segms[label]['area'] = label_cnt
             pred_labels_set.remove(label)
             if pred_segms[label]['category_id'] not in categories:
                 raise KeyError(
-                    'In the image with ID {} segment with ID {} has '
-                    'unknown category_id {}.'.format(
-                        gt_ann['image_id'], label,
-                        pred_segms[label]['category_id']))
-        if len(pred_labels_set) != 0:
+                    f"In the image with ID {gt_ann['image_id']} segment with ID {label} has unknown category_id {pred_segms[label]['category_id']}."
+                )
+        if pred_labels_set:
             raise KeyError(
-                'In the image with ID {} the following segment IDs {} '
-                'are presented in JSON and not presented in PNG.'.format(
-                    gt_ann['image_id'], list(pred_labels_set)))
+                f"In the image with ID {gt_ann['image_id']} the following segment IDs {list(pred_labels_set)} are presented in JSON and not presented in PNG."
+            )
 
         # confusion matrix calculation
         pan_gt_pred = pan_gt.astype(np.uint64) * OFFSET + pan_pred.astype(
@@ -169,8 +162,7 @@ def pq_compute_single_core(proc_id,
             pq_stat[pred_info['category_id']].fp += 1
 
     if print_log:
-        print('Core: {}, all {} images processed'.format(
-            proc_id, len(annotation_set)))
+        print(f'Core: {proc_id}, all {len(annotation_set)} images processed')
     return pq_stat
 
 
@@ -206,8 +198,9 @@ def pq_compute_multi_core(matched_annotations_list,
     cpu_num = min(nproc, multiprocessing.cpu_count())
 
     annotations_split = np.array_split(matched_annotations_list, cpu_num)
-    print('Number of cores: {}, images per core: {}'.format(
-        cpu_num, len(annotations_split[0])))
+    print(
+        f'Number of cores: {cpu_num}, images per core: {len(annotations_split[0])}'
+    )
     workers = multiprocessing.Pool(processes=cpu_num)
     processes = []
     for proc_id, annotation_set in enumerate(annotations_split):

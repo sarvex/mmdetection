@@ -208,6 +208,5 @@ class Darknet(BaseModule):
             ConvModule(
                 in_channels, out_channels, 3, stride=2, padding=1, **cfg))
         for idx in range(res_repeat):
-            model.add_module('res{}'.format(idx),
-                             ResBlock(out_channels, **cfg))
+            model.add_module(f'res{idx}', ResBlock(out_channels, **cfg))
         return model

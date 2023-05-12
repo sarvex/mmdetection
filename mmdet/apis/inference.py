@@ -98,12 +98,11 @@ def init_detector(
         cfg_palette = metainfo.get('palette', None)
         if cfg_palette is not None:
             model.dataset_meta['palette'] = cfg_palette
-        else:
-            if 'palette' not in model.dataset_meta:
-                warnings.warn(
-                    'palette does not exist, random is used by default. '
-                    'You can also set the palette to customize.')
-                model.dataset_meta['palette'] = 'random'
+        elif 'palette' not in model.dataset_meta:
+            warnings.warn(
+                'palette does not exist, random is used by default. '
+                'You can also set the palette to customize.')
+            model.dataset_meta['palette'] = 'random'
 
     model.cfg = config  # save the config in the model for convenience
     model.to(device)
@@ -178,10 +177,7 @@ def inference_detector(
 
         result_list.append(results)
 
-    if not is_batch:
-        return result_list[0]
-    else:
-        return result_list
+    return result_list[0] if not is_batch else result_list
 
 
 # TODO: Awaiting refactoring
@@ -229,5 +225,4 @@ async def async_inference_detector(model, imgs):
     # We don't restore `torch.is_grad_enabled()` value during concurrent
     # inference since execution can overlap
     torch.set_grad_enabled(False)
-    results = await model.aforward_test(data, rescale=True)
-    return results
+    return await model.aforward_test(data, rescale=True)

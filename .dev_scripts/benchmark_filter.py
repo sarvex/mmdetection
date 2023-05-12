@@ -29,8 +29,7 @@ def parse_args():
         type=str,
         default='batch_train_list.txt',
         help='output path of gathered metrics to be stored')
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 basic_arch_root = [

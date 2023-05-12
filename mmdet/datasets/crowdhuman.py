@@ -71,7 +71,7 @@ class CrowdHumanDataset(BaseDetDataset):
         print_log('loading CrowdHuman annotation...', level=logging.INFO)
         data_list = []
         prog_bar = ProgressBar(len(anno_strs))
-        for i, anno_str in enumerate(anno_strs):
+        for anno_str in anno_strs:
             anno_dict = json.loads(anno_str)
             parsed_data_info = self.parse_data_info(anno_dict)
             data_list.append(parsed_data_info)
@@ -103,12 +103,9 @@ class CrowdHumanDataset(BaseDetDataset):
         Returns:
             Union[dict, List[dict]]: Parsed annotation.
         """
-        data_info = {}
         img_path = osp.join(self.data_prefix['img'],
                             f"{raw_data_info['ID']}.jpg")
-        data_info['img_path'] = img_path
-        data_info['img_id'] = raw_data_info['ID']
-
+        data_info = {'img_path': img_path, 'img_id': raw_data_info['ID']}
         if not self.extra_ann_exist:
             img_bytes = get(img_path, backend_args=self.backend_args)
             img = mmcv.imfrombytes(img_bytes, backend='cv2')
@@ -129,11 +126,13 @@ class CrowdHumanDataset(BaseDetDataset):
                 instance['bbox_label'] = self.metainfo['classes'].index(
                     ann['tag'])
                 instance['ignore_flag'] = 0
-            if 'extra' in ann:
-                if 'ignore' in ann['extra']:
-                    if ann['extra']['ignore'] != 0:
-                        instance['bbox_label'] = -1
-                        instance['ignore_flag'] = 1
+            if (
+                'extra' in ann
+                and 'ignore' in ann['extra']
+                and ann['extra']['ignore'] != 0
+            ):
+                instance['bbox_label'] = -1
+                instance['ignore_flag'] = 1
 
             x1, y1, w, h = ann['fbox']
             bbox = [x1, y1, x1 + w, y1 + h]

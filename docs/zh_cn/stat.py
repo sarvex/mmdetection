@@ -21,17 +21,19 @@ for f in files:
         content = content_file.read()
 
     title = content.split('\n')[0].replace('# ', '').strip()
-    ckpts = set(x.lower().strip()
-                for x in re.findall(r'\[model\]\((https?.*)\)', content))
+    ckpts = {
+        x.lower().strip()
+        for x in re.findall(r'\[model\]\((https?.*)\)', content)
+    }
 
-    if len(ckpts) == 0:
+    if not ckpts:
         continue
 
-    _papertype = [x for x in re.findall(r'\[([A-Z]+)\]', content)]
-    assert len(_papertype) > 0
+    _papertype = list(re.findall(r'\[([A-Z]+)\]', content))
+    assert _papertype
     papertype = _papertype[0]
 
-    paper = set([(papertype, title)])
+    paper = {(papertype, title)}
 
     titles.append(title)
     num_ckpts += len(ckpts)

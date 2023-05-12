@@ -77,8 +77,9 @@ test_dataloader = val_dataloader
 
 val_evaluator = dict(
     type='CocoMetric',
-    ann_file=data_root + 'annotations/instancesonly_filtered_gtFine_val.json',
+    ann_file=f'{data_root}annotations/instancesonly_filtered_gtFine_val.json',
     metric='bbox',
-    backend_args=backend_args)
+    backend_args=backend_args,
+)
 
 test_evaluator = val_evaluator

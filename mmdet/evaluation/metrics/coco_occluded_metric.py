@@ -98,8 +98,8 @@ class CocoOccludedSeparatedMetric(CocoMetric):
         dict_det = {}
         print_log('processing detection results...')
         prog_bar = mmengine.ProgressBar(len(results))
-        for i in range(len(results)):
-            gt, dt = results[i]
+        for result in results:
+            gt, dt = result
             img_id = dt['img_id']
             cur_img_name = self._coco_api.imgs[img_id]['file_name']
             if cur_img_name not in dict_det.keys():
@@ -160,8 +160,8 @@ class CocoOccludedSeparatedMetric(CocoMetric):
         """
         correct = 0
         prog_bar = mmengine.ProgressBar(len(gt_ann))
-        for iter_i in range(len(gt_ann)):
-            cur_item = gt_ann[iter_i]
+        for item in gt_ann:
+            cur_item = item
             cur_img_name = cur_item[0]
             cur_gt_bbox = cur_item[3]
             if is_occ:
@@ -173,7 +173,7 @@ class CocoOccludedSeparatedMetric(CocoMetric):
             cur_gt_class = cur_item[1]
             cur_gt_mask = coco_mask.decode(cur_item[4])
 
-            assert cur_img_name in result_dict.keys()
+            assert cur_img_name in result_dict
             cur_detections = result_dict[cur_img_name]
 
             correct_flag = False
@@ -200,5 +200,4 @@ class CocoOccludedSeparatedMetric(CocoMetric):
         mask1_area = np.count_nonzero(mask1 == 1)
         mask2_area = np.count_nonzero(mask2 == 1)
         intersection = np.count_nonzero(np.logical_and(mask1 == 1, mask2 == 1))
-        iou = intersection / (mask1_area + mask2_area - intersection)
-        return iou
+        return intersection / (mask1_area + mask2_area - intersection)

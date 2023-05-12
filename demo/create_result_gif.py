@@ -27,8 +27,7 @@ def parse_args():
         type=str,
         default='result.gif',
         help='gif path where will be saved')
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def _generate_batch_data(sampler, batch_size):
@@ -79,10 +78,10 @@ def create_frame_by_matplotlib(image_dir,
     # Longer length has higher priority
     result_dir_names.reverse()
 
-    images_list = []
-    for dir_names in result_dir_names:
-        images_list.append(scandir(osp.join(image_dir, dir_names)))
-
+    images_list = [
+        scandir(osp.join(image_dir, dir_names))
+        for dir_names in result_dir_names
+    ]
     frames = []
     for paths in _generate_batch_data(zip(*images_list), nrows):
 

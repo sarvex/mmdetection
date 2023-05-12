@@ -18,5 +18,5 @@ val_dataloader = dict(
         data_prefix=dict(img='')))
 test_dataloader = val_dataloader
 
-val_evaluator = dict(ann_file=data_root + 'annotations/lvis_v1_val.json')
+val_evaluator = dict(ann_file=f'{data_root}annotations/lvis_v1_val.json')
 test_evaluator = val_evaluator

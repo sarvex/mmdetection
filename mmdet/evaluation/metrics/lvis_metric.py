@@ -174,8 +174,7 @@ class LVISMetric(CocoMetric):
 
         recalls = eval_recalls(
             gt_bboxes, pred_bboxes, proposal_nums, iou_thrs, logger=logger)
-        ar = recalls.mean(axis=1)
-        return ar
+        return recalls.mean(axis=1)
 
     # TODO: data_batch is no longer needed, consider adjusting the
     #  parameter position
@@ -190,10 +189,11 @@ class LVISMetric(CocoMetric):
                 contain annotations and predictions.
         """
         for data_sample in data_samples:
-            result = dict()
             pred = data_sample['pred_instances']
-            result['img_id'] = data_sample['img_id']
-            result['bboxes'] = pred['bboxes'].cpu().numpy()
+            result = {
+                'img_id': data_sample['img_id'],
+                'bboxes': pred['bboxes'].cpu().numpy(),
+            }
             result['scores'] = pred['scores'].cpu().numpy()
             result['labels'] = pred['labels'].cpu().numpy()
             # encode mask to RLE
@@ -205,15 +205,16 @@ class LVISMetric(CocoMetric):
                 result['mask_scores'] = pred['mask_scores'].cpu().numpy()
 
             # parse gt
-            gt = dict()
-            gt['width'] = data_sample['ori_shape'][1]
-            gt['height'] = data_sample['ori_shape'][0]
-            gt['img_id'] = data_sample['img_id']
+            gt = {
+                'width': data_sample['ori_shape'][1],
+                'height': data_sample['ori_shape'][0],
+                'img_id': data_sample['img_id'],
+            }
             if self._lvis_api is None:
                 # TODO: Need to refactor to support LoadAnnotations
                 assert 'instances' in data_sample, \
-                    'ground truth is required for evaluation when ' \
-                    '`ann_file` is not provided'
+                        'ground truth is required for evaluation when ' \
+                        '`ann_file` is not provided'
                 gt['anns'] = data_sample['instances']
             # add converted result to the results list
             self.results.append((gt, result))
@@ -325,10 +326,7 @@ class LVISMetric(CocoMetric):
                         nm = self._lvis_api.load_cats([catId])[0]
                         precision = precisions[:, :, idx, 0]
                         precision = precision[precision > -1]
-                        if precision.size:
-                            ap = np.mean(precision)
-                        else:
-                            ap = float('nan')
+                        ap = np.mean(precision) if precision.size else float('nan')
                         results_per_category.append(
                             (f'{nm["name"]}', f'{float(ap):0.3f}'))
                         eval_results[f'{nm["name"]}_precision'] = round(ap, 3)
@@ -342,7 +340,7 @@ class LVISMetric(CocoMetric):
                         for i in range(num_columns)
                     ])
                     table_data = [headers]
-                    table_data += [result for result in results_2d]
+                    table_data += list(results_2d)
                     table = AsciiTable(table_data)
                     logger.info('\n' + table.table)
 
@@ -354,7 +352,7 @@ class LVISMetric(CocoMetric):
 
                 for k, v in lvis_results.items():
                     if k in metric_items:
-                        key = '{}_{}'.format(metric, k)
+                        key = f'{metric}_{k}'
                         val = float('{:.3f}'.format(float(v)))
                         eval_results[key] = val
 

@@ -63,7 +63,7 @@ class PackDetInputs(BaseTransform):
             - 'data_sample' (obj:`DetDataSample`): The annotation info of the
                 sample.
         """
-        packed_results = dict()
+        packed_results = {}
         if 'img' in results:
             img = results['img']
             if len(img.shape) < 3:
@@ -102,15 +102,14 @@ class PackDetInputs(BaseTransform):
                         self.mapping_table[key]] = results[key][ignore_idx]
                 else:
                     instance_data[self.mapping_table[key]] = results[key]
+            elif 'gt_ignore_flags' in results:
+                instance_data[self.mapping_table[key]] = to_tensor(
+                    results[key][valid_idx])
+                ignore_instance_data[self.mapping_table[key]] = to_tensor(
+                    results[key][ignore_idx])
             else:
-                if 'gt_ignore_flags' in results:
-                    instance_data[self.mapping_table[key]] = to_tensor(
-                        results[key][valid_idx])
-                    ignore_instance_data[self.mapping_table[key]] = to_tensor(
-                        results[key][ignore_idx])
-                else:
-                    instance_data[self.mapping_table[key]] = to_tensor(
-                        results[key])
+                instance_data[self.mapping_table[key]] = to_tensor(
+                    results[key])
         data_sample.gt_instances = instance_data
         data_sample.ignored_instances = ignore_instance_data
 
@@ -128,7 +127,7 @@ class PackDetInputs(BaseTransform):
         img_meta = {}
         for key in self.meta_keys:
             assert key in results, f'`{key}` is not found in `results`, ' \
-                f'the valid keys are {list(results)}.'
+                    f'the valid keys are {list(results)}.'
             img_meta[key] = results[key]
 
         data_sample.set_metainfo(img_meta)
@@ -168,7 +167,7 @@ class ToTensor:
         return results
 
     def __repr__(self):
-        return self.__class__.__name__ + f'(keys={self.keys})'
+        return f'{self.__class__.__name__}(keys={self.keys})'
 
 
 @TRANSFORMS.register_module()
@@ -206,7 +205,7 @@ class ImageToTensor:
         return results
 
     def __repr__(self):
-        return self.__class__.__name__ + f'(keys={self.keys})'
+        return f'{self.__class__.__name__}(keys={self.keys})'
 
 
 @TRANSFORMS.register_module()

@@ -110,7 +110,7 @@ class DumpProposals(BaseMetric):
         logger: MMLogger = MMLogger.get_current_instance()
         dump_results = {}
         for result in results:
-            dump_results.update(result)
+            dump_results |= result
         dump(
             dump_results,
             file=self.proposals_file,

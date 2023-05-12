@@ -40,8 +40,7 @@ def parse_args():
         type=float,
         default=1,
         help='The interval of show (s), 0 is block')
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def prefetch_batch_input_shape(model: nn.Module, ori_wh: Tuple[int,
@@ -70,8 +69,7 @@ def pack_data(frame_resize: np.ndarray, batch_input_shape: Tuple[int, int],
                          batch_input_shape[1] / ori_shape[1])
     })
     frame_resize = torch.from_numpy(frame_resize).permute((2, 0, 1))
-    data = {'inputs': frame_resize, 'data_sample': data_sample}
-    return data
+    return {'inputs': frame_resize, 'data_sample': data_sample}
 
 
 def main():

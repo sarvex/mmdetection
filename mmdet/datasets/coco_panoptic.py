@@ -202,8 +202,6 @@ class CocoPanopticDataset(CocoDataset):
         ann_info = [
             ann for ann in ann_info if ann['image_id'] == img_info['img_id']
         ]
-        data_info = {}
-
         img_path = osp.join(self.data_prefix['img'], img_info['file_name'])
         if self.data_prefix.get('seg', None):
             seg_map_path = osp.join(
@@ -211,12 +209,13 @@ class CocoPanopticDataset(CocoDataset):
                 img_info['file_name'].replace('jpg', 'png'))
         else:
             seg_map_path = None
-        data_info['img_path'] = img_path
-        data_info['img_id'] = img_info['img_id']
-        data_info['seg_map_path'] = seg_map_path
-        data_info['height'] = img_info['height']
-        data_info['width'] = img_info['width']
-
+        data_info = {
+            'img_path': img_path,
+            'img_id': img_info['img_id'],
+            'seg_map_path': seg_map_path,
+            'height': img_info['height'],
+            'width': img_info['width'],
+        }
         instances = []
         segments_info = []
         for ann in ann_info:
@@ -245,7 +244,7 @@ class CocoPanopticDataset(CocoDataset):
                 'is_thing': is_thing
             }
             segments_info.append(segment_info)
-            if len(instance) > 0 and is_thing:
+            if instance and is_thing:
                 instances.append(instance)
         data_info['instances'] = instances
         data_info['segments_info'] = segments_info

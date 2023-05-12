@@ -89,10 +89,7 @@ def parse_args():
         call_args['model'] = None
 
     init_kws = ['model', 'weights', 'device', 'palette']
-    init_args = {}
-    for init_kw in init_kws:
-        init_args[init_kw] = call_args.pop(init_kw)
-
+    init_args = {init_kw: call_args.pop(init_kw) for init_kw in init_kws}
     return init_args, call_args
 
 

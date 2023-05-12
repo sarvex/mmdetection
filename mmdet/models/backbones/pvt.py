@@ -613,10 +613,7 @@ def pvt_convert(ckpt):
             stage_i = int(k.replace('pos_embed', ''))
             new_k = k.replace(f'pos_embed{stage_i}',
                               f'layers.{stage_i - 1}.1.0.pos_embed')
-            if stage_i == 4 and v.size(1) == 50:  # 1 (cls token) + 7 * 7
-                new_v = v[:, 1:, :]  # remove cls token
-            else:
-                new_v = v
+            new_v = v[:, 1:, :] if stage_i == 4 and v.size(1) == 50 else v
         elif k.startswith('patch_embed'):
             stage_i = int(k.split('.')[0].replace('patch_embed', ''))
             new_k = k.replace(f'patch_embed{stage_i}',

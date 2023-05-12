@@ -77,36 +77,36 @@ class GeomTransform(BaseTransform):
                  seg_ignore_label: int = 255,
                  interpolation: str = 'bilinear') -> None:
         assert 0 <= prob <= 1.0, f'The probability of the transformation ' \
-                                 f'should be in range [0,1], got {prob}.'
+                                     f'should be in range [0,1], got {prob}.'
         assert level is None or isinstance(level, int), \
-            f'The level should be None or type int, got {type(level)}.'
+                f'The level should be None or type int, got {type(level)}.'
         assert level is None or 0 <= level <= _MAX_LEVEL, \
-            f'The level should be in range [0,{_MAX_LEVEL}], got {level}.'
+                f'The level should be in range [0,{_MAX_LEVEL}], got {level}.'
         assert isinstance(min_mag, float), \
-            f'min_mag should be type float, got {type(min_mag)}.'
+                f'min_mag should be type float, got {type(min_mag)}.'
         assert isinstance(max_mag, float), \
-            f'max_mag should be type float, got {type(max_mag)}.'
+                f'max_mag should be type float, got {type(max_mag)}.'
         assert min_mag <= max_mag, \
-            f'min_mag should smaller than max_mag, ' \
-            f'got min_mag={min_mag} and max_mag={max_mag}'
+                f'min_mag should smaller than max_mag, ' \
+                f'got min_mag={min_mag} and max_mag={max_mag}'
         assert isinstance(reversal_prob, float), \
-            f'reversal_prob should be type float, got {type(max_mag)}.'
+                f'reversal_prob should be type float, got {type(max_mag)}.'
         assert 0 <= reversal_prob <= 1.0, \
-            f'The reversal probability of the transformation magnitude ' \
-            f'should be type float, got {type(reversal_prob)}.'
+                f'The reversal probability of the transformation magnitude ' \
+                f'should be type float, got {type(reversal_prob)}.'
         if isinstance(img_border_value, (float, int)):
             img_border_value = tuple([float(img_border_value)] * 3)
         elif isinstance(img_border_value, tuple):
             assert len(img_border_value) == 3, \
-                f'img_border_value as tuple must have 3 elements, ' \
-                f'got {len(img_border_value)}.'
-            img_border_value = tuple([float(val) for val in img_border_value])
+                    f'img_border_value as tuple must have 3 elements, ' \
+                    f'got {len(img_border_value)}.'
+            img_border_value = tuple(float(val) for val in img_border_value)
         else:
             raise ValueError(
                 'img_border_value must be float or tuple with 3 elements.')
         assert np.all([0 <= val <= 255 for val in img_border_value]), 'all ' \
-            'elements of img_border_value should between range [0,255].' \
-            f'got {img_border_value}.'
+                'elements of img_border_value should between range [0,255].' \
+                f'got {img_border_value}.'
         self.prob = prob
         self.level = level
         self.min_mag = min_mag

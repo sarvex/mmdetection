@@ -1,5 +1,4 @@
 # dataset settings
-dataset_type = 'CityscapesDataset'
 data_root = 'data/cityscapes/'
 
 # Example to use different file client
@@ -39,6 +38,7 @@ test_pipeline = [
                    'scale_factor'))
 ]
 
+dataset_type = 'CityscapesDataset'
 train_dataloader = dict(
     batch_size=1,
     num_workers=2,
@@ -78,15 +78,16 @@ test_dataloader = val_dataloader
 val_evaluator = [
     dict(
         type='CocoMetric',
-        ann_file=data_root +
-        'annotations/instancesonly_filtered_gtFine_val.json',
+        ann_file=f'{data_root}annotations/instancesonly_filtered_gtFine_val.json',
         metric=['bbox', 'segm'],
-        backend_args=backend_args),
+        backend_args=backend_args,
+    ),
     dict(
         type='CityScapesMetric',
-        seg_prefix=data_root + 'gtFine/val',
+        seg_prefix=f'{data_root}gtFine/val',
         outfile_prefix='./work_dirs/cityscapes_metric/instance',
-        backend_args=backend_args)
+        backend_args=backend_args,
+    ),
 ]
 
 test_evaluator = val_evaluator

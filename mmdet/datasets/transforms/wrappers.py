@@ -108,9 +108,10 @@ class MultiBranch(BaseTransform):
                 info of the sample from different branches.
         """
 
-        multi_results = {}
-        for branch in self.branch_field:
-            multi_results[branch] = {'inputs': None, 'data_samples': None}
+        multi_results = {
+            branch: {'inputs': None, 'data_samples': None}
+            for branch in self.branch_field
+        }
         for branch, pipeline in self.branch_pipelines.items():
             branch_results = pipeline(copy.deepcopy(results))
             # If one branch pipeline returns None,
@@ -161,7 +162,7 @@ class RandomOrder(Compose):
 
     def __repr__(self):
         """Compute the string representation."""
-        format_string = self.__class__.__name__ + '('
+        format_string = f'{self.__class__.__name__}('
         for t in self.transforms:
             format_string += f'{t.__class__.__name__}, '
         format_string += ')'
@@ -241,8 +242,7 @@ class ProposalBroadcaster(BaseTransform):
         """
         cp_data = copy.deepcopy(data)
         cp_data['gt_bboxes'] = cp_data['proposals']
-        scatters = [data, cp_data]
-        return scatters
+        return [data, cp_data]
 
     def _apply_transforms(self, inputs: list) -> list:
         """Apply ``self.transforms``.

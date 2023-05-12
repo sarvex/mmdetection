@@ -63,10 +63,11 @@ test_dataloader = val_dataloader
 
 val_evaluator = dict(
     type='CocoMetric',
-    ann_file=data_root + 'annotations/voc07_test.json',
+    ann_file=f'{data_root}annotations/voc07_test.json',
     metric='bbox',
     format_only=False,
-    backend_args={{_base_.backend_args}})
+    backend_args={{_base_.backend_args}},
+)
 test_evaluator = val_evaluator
 
 # training schedule, the dataset is repeated 3 times, so the

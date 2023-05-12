@@ -181,14 +181,16 @@ train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
 val_evaluator = [
     dict(
         type='CocoPanopticMetric',
-        ann_file=data_root + 'annotations/panoptic_val2017.json',
-        seg_prefix=data_root + 'annotations/panoptic_val2017/',
-        backend_args={{_base_.backend_args}}),
+        ann_file=f'{data_root}annotations/panoptic_val2017.json',
+        seg_prefix=f'{data_root}annotations/panoptic_val2017/',
+        backend_args={{_base_.backend_args}},
+    ),
     dict(
         type='CocoMetric',
-        ann_file=data_root + 'annotations/instances_val2017.json',
+        ann_file=f'{data_root}annotations/instances_val2017.json',
         metric=['bbox', 'segm'],
-        backend_args={{_base_.backend_args}})
+        backend_args={{_base_.backend_args}},
+    ),
 ]
 test_evaluator = val_evaluator
 

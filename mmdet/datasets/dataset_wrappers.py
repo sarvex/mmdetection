@@ -41,10 +41,7 @@ class MultiImageMixDataset:
                  lazy_init: bool = False) -> None:
         assert isinstance(pipeline, collections.abc.Sequence)
         if skip_type_keys is not None:
-            assert all([
-                isinstance(skip_type_key, str)
-                for skip_type_key in skip_type_keys
-            ])
+            assert all(isinstance(skip_type_key, str) for skip_type_key in skip_type_keys)
         self._skip_type_keys = skip_type_keys
 
         self.pipeline = []
@@ -163,7 +160,5 @@ class MultiImageMixDataset:
             skip_type_keys (list[str], optional): Sequence of type
                 string to be skip pipeline.
         """
-        assert all([
-            isinstance(skip_type_key, str) for skip_type_key in skip_type_keys
-        ])
+        assert all(isinstance(skip_type_key, str) for skip_type_key in skip_type_keys)
         self._skip_type_keys = skip_type_keys

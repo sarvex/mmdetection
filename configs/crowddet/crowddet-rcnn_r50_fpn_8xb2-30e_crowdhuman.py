@@ -200,9 +200,10 @@ test_dataloader = val_dataloader
 
 val_evaluator = dict(
     type='CrowdHumanMetric',
-    ann_file=data_root + 'annotation_val.odgt',
+    ann_file=f'{data_root}annotation_val.odgt',
     metric=['AP', 'MR', 'JI'],
-    backend_args=backend_args)
+    backend_args=backend_args,
+)
 test_evaluator = val_evaluator
 
 train_cfg = dict(type='EpochBasedTrainLoop', max_epochs=30, val_interval=1)

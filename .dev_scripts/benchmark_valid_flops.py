@@ -69,8 +69,7 @@ def parse_args():
         default=32,
         help='Pad the input image, the minimum size that is divisible '
         'by size_divisor, -1 means do not pad the image.')
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def inference(config_file, checkpoint, work_dir, args, exp_name):
@@ -184,15 +183,13 @@ def show_summary(summary_data, args):
         table.add_column('Params', justify='right')
 
     for model_name, summary in summary_data.items():
-        row = [model_name]
         valid = summary['valid']
         color = 'green' if valid == 'PASS' else 'red'
-        row.append(f'[{color}]{valid}[/{color}]')
+        row = [model_name, f'[{color}]{valid}[/{color}]']
         if valid == 'PASS':
             row.append(str(summary['resolution']))
             if args.flops:
-                row.append(str(summary['flops']))
-                row.append(str(summary['params']))
+                row.extend((str(summary['flops']), str(summary['params'])))
         table.add_row(*row)
 
     console.print(table)
@@ -225,9 +222,9 @@ def main(args):
         filter_models = {}
         for k, v in models.items():
             k = k.replace('+', '_')
-            if any([re.match(pattern, k) for pattern in patterns]):
+            if any(re.match(pattern, k) for pattern in patterns):
                 filter_models[k] = v
-        if len(filter_models) == 0:
+        if not filter_models:
             print('No model found, please specify models in:')
             print('\n'.join(models.keys()))
             return
@@ -251,9 +248,9 @@ def main(args):
 
         logger.info(f'Processing: {model_name}')
 
-        http_prefix = 'https://download.openmmlab.com/mmdetection/'
         if args.checkpoint_root is not None:
             root = args.checkpoint_root
+            http_prefix = 'https://download.openmmlab.com/mmdetection/'
             if 's3://' in args.checkpoint_root:
                 from petrel_client.common.exception import AccessDeniedError
                 file_client = FileClient.infer_client(uri=root)

@@ -52,8 +52,9 @@ test_dataloader = val_dataloader
 
 val_evaluator = dict(
     type='LVISMetric',
-    ann_file=data_root + 'annotations/lvis_v1_val.json',
-    metric=['bbox', 'segm'])
+    ann_file=f'{data_root}annotations/lvis_v1_val.json',
+    metric=['bbox', 'segm'],
+)
 test_evaluator = val_evaluator
 
 train_cfg = dict(val_interval=24)

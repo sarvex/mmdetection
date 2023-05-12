@@ -111,8 +111,6 @@ class CocoDataset(BaseDetDataset):
         img_info = raw_data_info['raw_img_info']
         ann_info = raw_data_info['raw_ann_info']
 
-        data_info = {}
-
         # TODO: need to change data_prefix['img'] to data_prefix['img_path']
         img_path = osp.join(self.data_prefix['img'], img_info['file_name'])
         if self.data_prefix.get('seg', None):
@@ -121,16 +119,15 @@ class CocoDataset(BaseDetDataset):
                 img_info['file_name'].rsplit('.', 1)[0] + self.seg_map_suffix)
         else:
             seg_map_path = None
-        data_info['img_path'] = img_path
-        data_info['img_id'] = img_info['img_id']
-        data_info['seg_map_path'] = seg_map_path
-        data_info['height'] = img_info['height']
-        data_info['width'] = img_info['width']
-
+        data_info = {
+            'img_path': img_path,
+            'img_id': img_info['img_id'],
+            'seg_map_path': seg_map_path,
+            'height': img_info['height'],
+            'width': img_info['width'],
+        }
         instances = []
         for i, ann in enumerate(ann_info):
-            instance = {}
-
             if ann.get('ignore', False):
                 continue
             x1, y1, w, h = ann['bbox']
@@ -144,10 +141,7 @@ class CocoDataset(BaseDetDataset):
                 continue
             bbox = [x1, y1, x1 + w, y1 + h]
 
-            if ann.get('iscrowd', False):
-                instance['ignore_flag'] = 1
-            else:
-                instance['ignore_flag'] = 0
+            instance = {'ignore_flag': 1 if ann.get('iscrowd', False) else 0}
             instance['bbox'] = bbox
             instance['bbox_label'] = self.cat2label[ann['category_id']]
 
@@ -174,10 +168,10 @@ class CocoDataset(BaseDetDataset):
         min_size = self.filter_cfg.get('min_size', 0)
 
         # obtain images that contain annotation
-        ids_with_ann = set(data_info['img_id'] for data_info in self.data_list)
+        ids_with_ann = {data_info['img_id'] for data_info in self.data_list}
         # obtain images that contain annotations of the required categories
         ids_in_cat = set()
-        for i, class_id in enumerate(self.cat_ids):
+        for class_id in self.cat_ids:
             ids_in_cat |= set(self.cat_img_map[class_id])
         # merge the image id sets of the two conditions and use the merged set
         # to filter out images if self.filter_empty_gt=True

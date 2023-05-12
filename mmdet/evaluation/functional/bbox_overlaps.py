@@ -27,10 +27,7 @@ def bbox_overlaps(bboxes1,
     """
 
     assert mode in ['iou', 'iof']
-    if not use_legacy_coordinate:
-        extra_length = 0.
-    else:
-        extra_length = 1.
+    extra_length = 0. if not use_legacy_coordinate else 1.
     bboxes1 = bboxes1.astype(np.float32)
     bboxes2 = bboxes2.astype(np.float32)
     rows = bboxes1.shape[0]

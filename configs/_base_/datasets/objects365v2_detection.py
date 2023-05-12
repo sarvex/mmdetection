@@ -66,8 +66,9 @@ test_dataloader = val_dataloader
 
 val_evaluator = dict(
     type='CocoMetric',
-    ann_file=data_root + 'annotations/zhiyuan_objv2_val.json',
+    ann_file=f'{data_root}annotations/zhiyuan_objv2_val.json',
     metric='bbox',
     format_only=False,
-    backend_args=backend_args)
+    backend_args=backend_args,
+)
 test_evaluator = val_evaluator

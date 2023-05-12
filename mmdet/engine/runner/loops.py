@@ -23,16 +23,16 @@ class TeacherStudentValLoop(ValLoop):
         assert hasattr(model, 'student')
 
         predict_on = model.semi_test_cfg.get('predict_on', None)
-        multi_metrics = dict()
+        multi_metrics = {}
         for _predict_on in ['teacher', 'student']:
             model.semi_test_cfg['predict_on'] = _predict_on
             for idx, data_batch in enumerate(self.dataloader):
                 self.run_iter(idx, data_batch)
             # compute metrics
             metrics = self.evaluator.evaluate(len(self.dataloader.dataset))
-            multi_metrics.update(
-                {'/'.join((_predict_on, k)): v
-                 for k, v in metrics.items()})
+            multi_metrics |= {
+                '/'.join((_predict_on, k)): v for k, v in metrics.items()
+            }
         model.semi_test_cfg['predict_on'] = predict_on
 
         self.runner.call_hook('after_val_epoch', metrics=multi_metrics)

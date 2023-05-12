@@ -197,11 +197,8 @@ class CSPDarknet(BaseModule):
                      mode='fan_in',
                      nonlinearity='leaky_relu')):
         super().__init__(init_cfg)
-        arch_setting = self.arch_settings[arch]
-        if arch_ovewrite:
-            arch_setting = arch_ovewrite
-        assert set(out_indices).issubset(
-            i for i in range(len(arch_setting) + 1))
+        arch_setting = arch_ovewrite if arch_ovewrite else self.arch_settings[arch]
+        assert set(out_indices).issubset(iter(range(len(arch_setting) + 1)))
         if frozen_stages not in range(-1, len(arch_setting) + 1):
             raise ValueError('frozen_stages must be in range(-1, '
                              'len(arch_setting) + 1). But received '
@@ -222,12 +219,10 @@ class CSPDarknet(BaseModule):
             act_cfg=act_cfg)
         self.layers = ['stem']
 
-        for i, (in_channels, out_channels, num_blocks, add_identity,
-                use_spp) in enumerate(arch_setting):
+        for i, (in_channels, out_channels, num_blocks, add_identity, use_spp) in enumerate(arch_setting):
             in_channels = int(in_channels * widen_factor)
             out_channels = int(out_channels * widen_factor)
             num_blocks = max(round(num_blocks * deepen_factor), 1)
-            stage = []
             conv_layer = conv(
                 in_channels,
                 out_channels,
@@ -237,7 +232,7 @@ class CSPDarknet(BaseModule):
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
                 act_cfg=act_cfg)
-            stage.append(conv_layer)
+            stage = [conv_layer]
             if use_spp:
                 spp = SPPBottleneck(
                     out_channels,

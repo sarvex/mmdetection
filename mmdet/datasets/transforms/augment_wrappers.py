@@ -54,11 +54,12 @@ AUTOAUG_POLICIES_V0 = [
 
 def policies_v0():
     """Autoaugment policies that was used in AutoAugment Paper."""
-    policies = list()
+    policies = []
     for policy_args in AUTOAUG_POLICIES_V0:
-        policy = list()
-        for args in policy_args:
-            policy.append(dict(type=args[0], prob=args[1], level=args[2]))
+        policy = [
+            dict(type=args[0], prob=args[1], level=args[2])
+            for args in policy_args
+        ]
         policies.append(policy)
     return policies
 
@@ -147,15 +148,16 @@ class AutoAugment(RandomChoice):
     def __init__(self,
                  policies: List[List[Union[dict, ConfigDict]]] = policies_v0(),
                  prob: Optional[List[float]] = None) -> None:
-        assert isinstance(policies, list) and len(policies) > 0, \
-            'Policies must be a non-empty list.'
+        assert (
+            isinstance(policies, list) and policies
+        ), 'Policies must be a non-empty list.'
         for policy in policies:
             assert isinstance(policy, list) and len(policy) > 0, \
-                'Each policy in policies must be a non-empty list.'
+                    'Each policy in policies must be a non-empty list.'
             for augment in policy:
                 assert isinstance(augment, dict) and 'type' in augment, \
-                    'Each specific augmentation must be a dict with key' \
-                    ' "type".'
+                        'Each specific augmentation must be a dict with key' \
+                        ' "type".'
         super().__init__(transforms=policies, prob=prob)
         self.policies = policies
 
@@ -225,15 +227,16 @@ class RandAugment(RandomChoice):
                  aug_space: List[Union[dict, ConfigDict]] = RANDAUG_SPACE,
                  aug_num: int = 2,
                  prob: Optional[List[float]] = None) -> None:
-        assert isinstance(aug_space, list) and len(aug_space) > 0, \
-            'Augmentation space must be a non-empty list.'
+        assert (
+            isinstance(aug_space, list) and aug_space
+        ), 'Augmentation space must be a non-empty list.'
         for aug in aug_space:
             assert isinstance(aug, list) and len(aug) == 1, \
-                'Each augmentation in aug_space must be a list.'
+                    'Each augmentation in aug_space must be a list.'
             for transform in aug:
                 assert isinstance(transform, dict) and 'type' in transform, \
-                    'Each specific transform must be a dict with key' \
-                    ' "type".'
+                        'Each specific transform must be a dict with key' \
+                        ' "type".'
         super().__init__(transforms=aug_space, prob=prob)
         self.aug_space = aug_space
         self.aug_num = aug_num

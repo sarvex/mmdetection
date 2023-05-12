@@ -143,12 +143,7 @@ class LoadMultiChannelImageFromFiles(BaseTransform):
         return results
 
     def __repr__(self):
-        repr_str = (f'{self.__class__.__name__}('
-                    f'to_float32={self.to_float32}, '
-                    f"color_type='{self.color_type}', "
-                    f"imdecode_backend='{self.imdecode_backend}', "
-                    f'backend_args={self.backend_args})')
-        return repr_str
+        return f"{self.__class__.__name__}(to_float32={self.to_float32}, color_type='{self.color_type}', imdecode_backend='{self.imdecode_backend}', backend_args={self.backend_args})"
 
 
 @TRANSFORMS.register_module()
@@ -287,9 +282,9 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         Returns:
             dict: The dict contains loaded label annotations.
         """
-        gt_bboxes_labels = []
-        for instance in results.get('instances', []):
-            gt_bboxes_labels.append(instance['bbox_label'])
+        gt_bboxes_labels = [
+            instance['bbox_label'] for instance in results.get('instances', [])
+        ]
         # TODO: Inconsistent with mmcv, consider how to deal with it later.
         results['gt_bboxes_labels'] = np.array(
             gt_bboxes_labels, dtype=np.int64)
@@ -319,8 +314,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         else:
             # rle
             rle = mask_ann
-        mask = maskUtils.decode(rle)
-        return mask
+        return maskUtils.decode(rle)
 
     def _process_masks(self, results: dict) -> list:
         """Process gt_masks and filter invalid polygons.
@@ -342,7 +336,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
                     np.array(polygon) for polygon in gt_mask
                     if len(polygon) % 2 == 0 and len(polygon) >= 6
                 ]
-                if len(gt_mask) == 0:
+                if not gt_mask:
                     # ignore this instance and set gt_mask to a fake mask
                     instance['ignore_flag'] = 1
                     gt_mask = [np.zeros(6)]
@@ -352,7 +346,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
                 instance['ignore_flag'] = 1
                 gt_mask = [np.zeros(6)]
             elif isinstance(gt_mask, dict) and \
-                    not (gt_mask.get('counts') is not None and
+                        not (gt_mask.get('counts') is not None and
                          gt_mask.get('size') is not None and
                          isinstance(gt_mask['counts'], (list, str))):
                 # if gt_mask is a dict, it should include `counts` and `size`,
@@ -378,7 +372,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
                 [self._poly2mask(mask, h, w) for mask in gt_masks], h, w)
         else:
             # fake polygon masks will be ignored in `PackDetInputs`
-            gt_masks = PolygonMasks([mask for mask in gt_masks], h, w)
+            gt_masks = PolygonMasks(list(gt_masks), h, w)
         results['gt_masks'] = gt_masks
 
     def transform(self, results: dict) -> dict:
@@ -632,11 +626,10 @@ class LoadProposals(BaseTransform):
 
         proposals = results['proposals']
         # the type of proposals should be `dict` or `InstanceData`
-        assert isinstance(proposals, dict) \
-               or isinstance(proposals, BaseDataElement)
+        assert isinstance(proposals, (dict, BaseDataElement))
         bboxes = proposals['bboxes'].astype(np.float32)
         assert bboxes.shape[1] == 4, \
-            f'Proposals should have shapes (n, 4), but found {bboxes.shape}'
+                f'Proposals should have shapes (n, 4), but found {bboxes.shape}'
 
         if 'scores' in proposals:
             scores = proposals['scores'].astype(np.float32)
@@ -736,9 +729,8 @@ class FilterAnnotations(BaseTransform):
         for t in tests[1:]:
             keep = keep & t
 
-        if not keep.any():
-            if self.keep_empty:
-                return None
+        if not keep.any() and self.keep_empty:
+            return None
 
         keys = ('gt_bboxes', 'gt_bboxes_labels', 'gt_masks', 'gt_ignore_flags')
         for key in keys:
@@ -874,6 +866,4 @@ class InferencerLoader(BaseTransform):
         else:
             raise NotImplementedError
 
-        if 'img' in inputs:
-            return self.from_ndarray(inputs)
-        return self.from_file(inputs)
+        return self.from_ndarray(inputs) if 'img' in inputs else self.from_file(inputs)

@@ -86,11 +86,7 @@ def tpfp_imagenet(det_bboxes,
         each array is (num_scales, m).
     """
 
-    if not use_legacy_coordinate:
-        extra_length = 0.
-    else:
-        extra_length = 1.
-
+    extra_length = 0. if not use_legacy_coordinate else 1.
     # an indicator of ignored gts
     gt_ignore_inds = np.concatenate(
         (np.zeros(gt_bboxes.shape[0],
@@ -195,11 +191,7 @@ def tpfp_default(det_bboxes,
         each array is (num_scales, m).
     """
 
-    if not use_legacy_coordinate:
-        extra_length = 0.
-    else:
-        extra_length = 1.
-
+    extra_length = 0. if not use_legacy_coordinate else 1.
     # an indicator of ignored gts
     gt_ignore_inds = np.concatenate(
         (np.zeros(gt_bboxes.shape[0],
@@ -310,11 +302,7 @@ def tpfp_openimages(det_bboxes,
         The shape is (num_scales, m).
     """
 
-    if not use_legacy_coordinate:
-        extra_length = 0.
-    else:
-        extra_length = 1.
-
+    extra_length = 0. if not use_legacy_coordinate else 1.
     # an indicator of ignored gts
     gt_ignore_inds = np.concatenate(
         (np.zeros(gt_bboxes.shape[0],
@@ -382,14 +370,16 @@ def tpfp_openimages(det_bboxes,
             for i in sort_inds:
                 if ious_max[i] >= iou_thr:
                     matched_gt = ious_argmax[i]
-                    if not (gt_ignore_inds[matched_gt]
-                            or gt_area_ignore[matched_gt]):
-                        if not gt_covered[matched_gt]:
+                    if (
+                        not gt_ignore_inds[matched_gt]
+                        and not gt_area_ignore[matched_gt]
+                    ):
+                        if gt_covered[matched_gt]:
+                            fp[k, i] = 1
+                        else:
                             gt_covered[matched_gt] = True
                             tp[k, i] = 1
-                        else:
-                            fp[k, i] = 1
-                    # otherwise ignore this detected bbox, tp = 0, fp = 0
+                                    # otherwise ignore this detected bbox, tp = 0, fp = 0
                 elif min_area is None:
                     fp[k, i] = 1
                 else:
@@ -398,22 +388,16 @@ def tpfp_openimages(det_bboxes,
                         bbox[3] - bbox[1] + extra_length)
                     if area >= min_area and area < max_area:
                         fp[k, i] = 1
+    elif area_ranges == [(None, None)]:
+        fp[...] = 1
     else:
-        # if there is no no-group-of gt bboxes in this image,
-        # then all det bboxes within area range are false positives.
-        # Only used in OpenImages evaluation.
-        if area_ranges == [(None, None)]:
-            fp[...] = 1
-        else:
-            det_areas = (
-                det_bboxes[:, 2] - det_bboxes[:, 0] + extra_length) * (
-                    det_bboxes[:, 3] - det_bboxes[:, 1] + extra_length)
-            for i, (min_area, max_area) in enumerate(area_ranges):
-                fp[i, (det_areas >= min_area) & (det_areas < max_area)] = 1
+        det_areas = (
+            det_bboxes[:, 2] - det_bboxes[:, 0] + extra_length) * (
+                det_bboxes[:, 3] - det_bboxes[:, 1] + extra_length)
+        for i, (min_area, max_area) in enumerate(area_ranges):
+            fp[i, (det_areas >= min_area) & (det_areas < max_area)] = 1
 
-    if ioas is None or ioas.shape[1] <= 0:
-        return tp, fp, det_bboxes
-    else:
+    if ioas is not None and ioas.shape[1] > 0:
         # The evaluation of group-of TP and FP are done in two stages:
         # 1. All detections are first matched to non group-of boxes; true
         #    positives are determined.
@@ -440,20 +424,19 @@ def tpfp_openimages(det_bboxes,
                 gt_area_ignore = (gt_areas < min_area) | (gt_areas >= max_area)
             for i in sort_inds:
                 matched_gt = ioas_argmax[i]
-                if not box_is_covered[i]:
-                    if ioas_max[i] >= ioa_thr:
-                        if not (gt_ignore_inds[matched_gt]
-                                or gt_area_ignore[matched_gt]):
-                            if not tp_group[k, matched_gt]:
-                                tp_group[k, matched_gt] = 1
-                                match_group_of[k, i] = True
-                            else:
-                                match_group_of[k, i] = True
-
-                            if det_bboxes_group[k, matched_gt, -1] < \
-                                    det_bboxes[i, -1]:
-                                det_bboxes_group[k, matched_gt] = \
-                                    det_bboxes[i]
+                if (
+                    not box_is_covered[i]
+                    and ioas_max[i] >= ioa_thr
+                    and not gt_ignore_inds[matched_gt]
+                    and not gt_area_ignore[matched_gt]
+                ):
+                    if not tp_group[k, matched_gt]:
+                        tp_group[k, matched_gt] = 1
+                    match_group_of[k, i] = True
+                    if det_bboxes_group[k, matched_gt, -1] < \
+                            det_bboxes[i, -1]:
+                        det_bboxes_group[k, matched_gt] = \
+                            det_bboxes[i]
 
         fp_group = (tp_group <= 0).astype(float)
         tps = []
@@ -471,7 +454,7 @@ def tpfp_openimages(det_bboxes,
 
         tp = np.vstack(tps)
         fp = np.vstack(fps)
-        return tp, fp, det_bboxes
+    return tp, fp, det_bboxes
 
 
 def get_cls_results(det_results, annotations, class_id):
@@ -587,11 +570,7 @@ def eval_map(det_results,
     assert eval_mode in ['area', '11points'], \
         f'Unrecognized {eval_mode} mode, only "area" and "11points" ' \
         'are supported'
-    if not use_legacy_coordinate:
-        extra_length = 0.
-    else:
-        extra_length = 1.
-
+    extra_length = 0. if not use_legacy_coordinate else 1.
     num_imgs = len(det_results)
     num_scales = len(scale_ranges) if scale_ranges is not None else 1
     num_classes = len(det_results[0])  # positive class num
@@ -629,8 +608,7 @@ def eval_map(det_results,
             if use_group_of:
                 # used in Open Images Dataset evaluation
                 gt_group_ofs = get_cls_group_ofs(annotations, i)
-                args.append(gt_group_ofs)
-                args.append([use_group_of for _ in range(num_imgs)])
+                args.extend((gt_group_ofs, [use_group_of for _ in range(num_imgs)]))
             if ioa_thr is not None:
                 args.append([ioa_thr for _ in range(num_imgs)])
 
@@ -661,7 +639,7 @@ def eval_map(det_results,
         # calculate gt number of each scale
         # ignored gts or gts beyond the specific scale are not counted
         num_gts = np.zeros(num_scales, dtype=int)
-        for j, bbox in enumerate(cls_gts):
+        for bbox in cls_gts:
             if area_ranges is None:
                 num_gts[0] += bbox.shape[0]
             else:
@@ -711,10 +689,11 @@ def eval_map(det_results,
             else:
                 mean_ap.append(0.0)
     else:
-        aps = []
-        for cls_result in eval_results:
-            if cls_result['num_gts'] > 0:
-                aps.append(cls_result['ap'])
+        aps = [
+            cls_result['ap']
+            for cls_result in eval_results
+            if cls_result['num_gts'] > 0
+        ]
         mean_ap = np.array(aps).mean().item() if aps else 0.0
 
     print_map_summary(

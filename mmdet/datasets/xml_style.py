@@ -41,7 +41,7 @@ class XMLDataset(BaseDetDataset):
             list[dict]: Annotation info from XML file.
         """
         assert self._metainfo.get('classes', None) is not None, \
-            '`classes` in `XMLDataset` can not be None.'
+                '`classes` in `XMLDataset` can not be None.'
         self.cat2label = {
             cat: i
             for i, cat in enumerate(self._metainfo['classes'])
@@ -54,11 +54,7 @@ class XMLDataset(BaseDetDataset):
             xml_path = osp.join(self.sub_data_root, self.ann_subdir,
                                 f'{img_id}.xml')
 
-            raw_img_info = {}
-            raw_img_info['img_id'] = img_id
-            raw_img_info['file_name'] = file_name
-            raw_img_info['xml_path'] = xml_path
-
+            raw_img_info = {'img_id': img_id, 'file_name': file_name, 'xml_path': xml_path}
             parsed_data_info = self.parse_data_info(raw_img_info)
             data_list.append(parsed_data_info)
         return data_list
@@ -81,12 +77,12 @@ class XMLDataset(BaseDetDataset):
         Returns:
             Union[dict, List[dict]]: Parsed annotation.
         """
-        data_info = {}
         img_path = osp.join(self.sub_data_root, img_info['file_name'])
-        data_info['img_path'] = img_path
-        data_info['img_id'] = img_info['img_id']
-        data_info['xml_path'] = img_info['xml_path']
-
+        data_info = {
+            'img_path': img_path,
+            'img_id': img_info['img_id'],
+            'xml_path': img_info['xml_path'],
+        }
         # deal with xml file
         with get_local_path(
                 img_info['xml_path'],
@@ -126,7 +122,6 @@ class XMLDataset(BaseDetDataset):
         """
         instances = []
         for obj in raw_ann_info.findall('object'):
-            instance = {}
             name = obj.find('name').text
             if name not in self._metainfo['classes']:
                 continue
@@ -151,12 +146,11 @@ class XMLDataset(BaseDetDataset):
                 h = bbox[3] - bbox[1]
                 if w < self.bbox_min_size or h < self.bbox_min_size:
                     ignore = True
-            if difficult or ignore:
-                instance['ignore_flag'] = 1
-            else:
-                instance['ignore_flag'] = 0
-            instance['bbox'] = bbox
-            instance['bbox_label'] = self.cat2label[name]
+            instance = {
+                'ignore_flag': 1 if difficult or ignore else 0,
+                'bbox': bbox,
+                'bbox_label': self.cat2label[name],
+            }
             instances.append(instance)
         return instances
 

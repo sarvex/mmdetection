@@ -105,12 +105,11 @@ def matchGtWithPreds(prediction_list: list,
                            'Please try to install official '
                            'cityscapesscripts by '
                            '"pip install cityscapesscripts"')
-    matches: dict = dict()
+    matches: dict = {}
     if not args.quiet:
         print(f'Matching {len(prediction_list)} pairs of images...')
 
-    count = 0
-    for (pred, gt) in zip(prediction_list, groundtruth_list):
+    for count, (pred, gt) in enumerate(zip(prediction_list, groundtruth_list), start=1):
         # Read input files
         gt_image = readGTImage(gt, backend_args)
         pred_info = readPredInfo(pred)
@@ -125,11 +124,10 @@ def matchGtWithPreds(prediction_list: list,
                                                      gt_image, pred_info, args)
 
         # append to global dict
-        matches[gt] = {}
-        matches[gt]['groundTruth'] = cur_gt_instances
-        matches[gt]['prediction'] = cur_pred_instances
-
-        count += 1
+        matches[gt] = {
+            'groundTruth': cur_gt_instances,
+            'prediction': cur_pred_instances,
+        }
         if not args.quiet:
             print(f'\rImages Processed: {count}', end=' ')
             sys.stdout.flush()
@@ -159,8 +157,7 @@ def readGTImage(image_file: Union[str, Path],
         np.ndarray: The groundtruth image.
     """
     img_bytes = get(image_file, backend_args=backend_args)
-    img = mmcv.imfrombytes(img_bytes, flag='unchanged', backend='pillow')
-    return img
+    return mmcv.imfrombytes(img_bytes, flag='unchanged', backend='pillow')
 
 
 def readPredInfo(prediction_file: str) -> dict:
@@ -197,9 +194,10 @@ def readPredInfo(prediction_file: str) -> dict:
             filename = os.path.join(
                 os.path.dirname(prediction_file), splittedLine[0])
 
-            imageInfo = {}
-            imageInfo['labelID'] = int(float(splittedLine[1]))
-            imageInfo['conf'] = float(splittedLine[2])  # type: ignore
+            imageInfo = {
+                'labelID': int(float(splittedLine[1])),
+                'conf': float(splittedLine[2]),
+            }
             predInfo[filename] = imageInfo
 
     return predInfo
@@ -266,7 +264,6 @@ def instances2dict(image_list: list,
                            'Please try to install official '
                            'cityscapesscripts by '
                            '"pip install cityscapesscripts"')
-    imgCount = 0
     instanceDict = {}
 
     if not isinstance(image_list, list):
@@ -275,16 +272,12 @@ def instances2dict(image_list: list,
     if not args.quiet:
         print(f'Processing {len(image_list)} images...')
 
-    for image_name in image_list:
+    for imgCount, image_name in enumerate(image_list, start=1):
         # Load image
         img_bytes = get(image_name, backend_args=backend_args)
         imgNp = mmcv.imfrombytes(img_bytes, flag='unchanged', backend='pillow')
 
-        # Initialize label categories
-        instances: dict = {}
-        for label in labels:
-            instances[label.name] = []
-
+        instances: dict = {label.name: [] for label in labels}
         # Loop through all instance ids in instance image
         for instanceId in np.unique(imgNp):
             instanceObj = Instance(imgNp, instanceId)
@@ -293,8 +286,6 @@ def instances2dict(image_list: list,
                 instanceObj.toDict())
 
         instanceDict[image_name] = instances
-        imgCount += 1
-
         if not args.quiet:
             print(f'\rImages Processed: {imgCount}', end=' ')
             sys.stdout.flush()

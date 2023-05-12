@@ -127,13 +127,11 @@ class CityScapesMetric(BaseMetric):
                 contain annotations and predictions.
         """
         for data_sample in data_samples:
-            # parse pred
-            result = dict()
             pred = data_sample['pred_instances']
             filename = data_sample['img_path']
             basename = osp.splitext(osp.basename(filename))[0]
-            pred_txt = osp.join(self.outfile_prefix, basename + '_pred.txt')
-            result['pred_txt'] = pred_txt
+            pred_txt = osp.join(self.outfile_prefix, f'{basename}_pred.txt')
+            result = {'pred_txt': pred_txt}
             labels = pred['labels'].cpu().numpy()
             masks = pred['masks'].cpu().numpy().astype(np.uint8)
             if 'mask_scores' in pred:
@@ -148,18 +146,15 @@ class CityScapesMetric(BaseMetric):
                     class_name = self.dataset_meta['classes'][label]
                     class_id = CSLabels.name2label[class_name].id
                     png_filename = osp.join(
-                        self.outfile_prefix,
-                        basename + f'_{i}_{class_name}.png')
+                        self.outfile_prefix, f'{basename}_{i}_{class_name}.png'
+                    )
                     mmcv.imwrite(mask, png_filename)
                     f.write(f'{osp.basename(png_filename)} '
                             f'{class_id} {mask_score}\n')
 
-            # parse gt
-            gt = dict()
             img_path = filename.replace('leftImg8bit.png',
                                         'gtFine_instanceIds.png')
-            gt['file_name'] = img_path.replace('leftImg8bit', 'gtFine')
-
+            gt = {'file_name': img_path.replace('leftImg8bit', 'gtFine')}
             self.results.append((gt, result))
 
     def compute_metrics(self, results: list) -> Dict[str, float]:

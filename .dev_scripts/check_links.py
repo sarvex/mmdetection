@@ -29,8 +29,7 @@ def parse_args():
         type=str,
         default='link_reports.txt',
         help='output path of reports')
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 OK_STATUS_CODES = (
@@ -118,7 +117,7 @@ def main():
     url_regex = re.compile(r'\[([^!][^\]]+)\]\(([^)(]+)\)')
     for markdown_file in markdown_files:
         with open(markdown_file) as handle:
-            for line in handle.readlines():
+            for line in handle:
                 matches = url_regex.findall(line)
                 for name, link in matches:
                     if 'localhost' not in link:
@@ -135,20 +134,19 @@ def main():
         results = pool.starmap(check_link, [(match, http_session, logger)
                                             for match in list(all_matches)])
 
-    # collect unreachable results
-    unreachable_results = [(match_tuple, reason)
-                           for match_tuple, success, reason in results
-                           if not success]
-
-    if unreachable_results:
+    if unreachable_results := [
+        (match_tuple, reason)
+        for match_tuple, success, reason in results
+        if not success
+    ]:
         logger.info('================================================')
         logger.info(f'Unreachable links ({len(unreachable_results)}):')
         for match_tuple, reason in unreachable_results:
-            logger.info('  > Source: ' + match_tuple.source)
-            logger.info('    Name: ' + match_tuple.name)
-            logger.info('    Link: ' + match_tuple.link)
+            logger.info(f'  > Source: {match_tuple.source}')
+            logger.info(f'    Name: {match_tuple.name}')
+            logger.info(f'    Link: {match_tuple.link}')
             if reason is not None:
-                logger.info('    Reason: ' + reason)
+                logger.info(f'    Reason: {reason}')
         sys.exit(1)
     logger.info('No Unreachable link found.')
 

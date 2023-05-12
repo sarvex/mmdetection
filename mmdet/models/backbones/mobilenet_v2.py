@@ -59,7 +59,7 @@ class MobileNetV2(BaseModule):
 
         self.pretrained = pretrained
         assert not (init_cfg and pretrained), \
-            'init_cfg and pretrained cannot be specified at the same time'
+                'init_cfg and pretrained cannot be specified at the same time'
         if isinstance(pretrained, str):
             warnings.warn('DeprecationWarning: pretrained is deprecated, '
                           'please use "init_cfg" instead')
@@ -119,11 +119,7 @@ class MobileNetV2(BaseModule):
             self.add_module(layer_name, inverted_res_layer)
             self.layers.append(layer_name)
 
-        if widen_factor > 1.0:
-            self.out_channel = int(1280 * widen_factor)
-        else:
-            self.out_channel = 1280
-
+        self.out_channel = int(1280 * widen_factor) if widen_factor > 1.0 else 1280
         layer = ConvModule(
             in_channels=self.in_channels,
             out_channels=self.out_channel,

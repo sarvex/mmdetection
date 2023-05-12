@@ -67,9 +67,10 @@ test_dataloader = val_dataloader
 
 val_evaluator = dict(
     type='CocoPanopticMetric',
-    ann_file=data_root + 'annotations/panoptic_val2017.json',
-    seg_prefix=data_root + 'annotations/panoptic_val2017/',
-    backend_args=backend_args)
+    ann_file=f'{data_root}annotations/panoptic_val2017.json',
+    seg_prefix=f'{data_root}annotations/panoptic_val2017/',
+    backend_args=backend_args,
+)
 test_evaluator = val_evaluator
 
 # inference on test dataset and

@@ -14,8 +14,7 @@ def parse_args():
     parser.add_argument(
         '--out', type=str, help='path to save model benchmark script')
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def determine_gpus(cfg_name):
@@ -47,20 +46,15 @@ def main():
     root_name = './tools'
     train_script_name = osp.join(root_name, 'slurm_train.sh')
 
-    commands = []
-    partition_name = 'PARTITION=$1 '
-    commands.append(partition_name)
-    commands.append('\n')
-
-    work_dir = 'WORK_DIR=$2 '
-    commands.append(work_dir)
-    commands.append('\n')
-
-    cpus_pre_task = 'CPUS_PER_TASK=${3:-4} '
-    commands.append(cpus_pre_task)
-    commands.append('\n')
-    commands.append('\n')
-
+    commands = [
+        'PARTITION=$1 ',
+        '\n',
+        'WORK_DIR=$2 ',
+        '\n',
+        'CPUS_PER_TASK=${3:-4} ',
+        '\n',
+        '\n',
+    ]
     with open(args.txt_path, 'r') as f:
         model_cfgs = f.readlines()
         for i, cfg in enumerate(model_cfgs):
@@ -69,11 +63,9 @@ def main():
                 continue
             # print cfg name
             echo_info = f'echo \'{cfg}\' &'
-            commands.append(echo_info)
-            commands.append('\n')
-
+            commands.extend((echo_info, '\n'))
             fname, _ = osp.splitext(osp.basename(cfg))
-            out_fname = '$WORK_DIR/' + fname
+            out_fname = f'$WORK_DIR/{fname}'
 
             gpus, gpus_pre_node = determine_gpus(cfg)
             command_info = f'GPUS={gpus}  GPUS_PER_NODE={gpus_pre_node}  ' \

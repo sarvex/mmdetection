@@ -19,10 +19,10 @@ class NumClassCheckHook(Hook):
             runner (:obj:`Runner`): The runner of the training or evaluation
                 process.
         """
-        assert mode in ['train', 'val']
+        assert mode in {'train', 'val'}
         model = runner.model
         dataset = runner.train_dataloader.dataset if mode == 'train' else \
-            runner.val_dataloader.dataset
+                runner.val_dataloader.dataset
         if dataset.metainfo.get('classes', None) is None:
             runner.logger.warning(
                 f'Please set `classes` '
@@ -32,7 +32,7 @@ class NumClassCheckHook(Hook):
         else:
             classes = dataset.metainfo['classes']
             assert type(classes) is not str, \
-                (f'`classes` in {dataset.__class__.__name__}'
+                    (f'`classes` in {dataset.__class__.__name__}'
                  f'should be a tuple of str.'
                  f'Add comma if number of classes is 1 as '
                  f'classes = ({classes},)')
@@ -42,7 +42,7 @@ class NumClassCheckHook(Hook):
                         'rpn_head') and not isinstance(
                             module, (VGG, FusedSemanticHead)):
                     assert module.num_classes == len(classes), \
-                        (f'The `num_classes` ({module.num_classes}) in '
+                            (f'The `num_classes` ({module.num_classes}) in '
                          f'{module.__class__.__name__} of '
                          f'{model.__class__.__name__} does not matches '
                          f'the length of `classes` '

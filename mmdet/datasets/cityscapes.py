@@ -35,10 +35,10 @@ class CityscapesDataset(CocoDataset):
         min_size = self.filter_cfg.get('min_size', 0)
 
         # obtain images that contain annotation
-        ids_with_ann = set(data_info['img_id'] for data_info in self.data_list)
+        ids_with_ann = {data_info['img_id'] for data_info in self.data_list}
         # obtain images that contain annotations of the required categories
         ids_in_cat = set()
-        for i, class_id in enumerate(self.cat_ids):
+        for class_id in self.cat_ids:
             ids_in_cat |= set(self.cat_img_map[class_id])
         # merge the image id sets of the two conditions and use the merged set
         # to filter out images if self.filter_empty_gt=True
@@ -49,10 +49,9 @@ class CityscapesDataset(CocoDataset):
             img_id = data_info['img_id']
             width = data_info['width']
             height = data_info['height']
-            all_is_crowd = all([
-                instance['ignore_flag'] == 1
-                for instance in data_info['instances']
-            ])
+            all_is_crowd = all(
+                instance['ignore_flag'] == 1 for instance in data_info['instances']
+            )
             if filter_empty_gt and (img_id not in ids_in_cat or all_is_crowd):
                 continue
             if min(width, height) >= min_size:

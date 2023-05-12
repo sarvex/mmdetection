@@ -66,7 +66,7 @@ class OpenImagesDataset(BaseDetDataset):
 
         data_list = []
         with get_local_path(
-                self.ann_file, backend_args=self.backend_args) as local_path:
+                    self.ann_file, backend_args=self.backend_args) as local_path:
             with open(local_path, 'r') as f:
                 reader = csv.reader(f)
                 last_img_id = None
@@ -86,11 +86,11 @@ class OpenImagesDataset(BaseDetDataset):
                         float(line[5]),  # xmax
                         float(line[7])  # ymax
                     ]
-                    is_occluded = True if int(line[8]) == 1 else False
-                    is_truncated = True if int(line[9]) == 1 else False
-                    is_group_of = True if int(line[10]) == 1 else False
-                    is_depiction = True if int(line[11]) == 1 else False
-                    is_inside = True if int(line[12]) == 1 else False
+                    is_occluded = int(line[8]) == 1
+                    is_truncated = int(line[9]) == 1
+                    is_group_of = int(line[10]) == 1
+                    is_depiction = int(line[11]) == 1
+                    is_inside = int(line[12]) == 1
 
                     instance = dict(
                         bbox=bbox,
@@ -267,13 +267,12 @@ class OpenImagesDataset(BaseDetDataset):
 
         if 'Subcategory' in hierarchy_map:
             for node in hierarchy_map['Subcategory']:
-                if 'LabelName' in node:
-                    children_name = node['LabelName']
-                    children_index = self.label_id_mapping[children_name]
-                    children = [children_index]
-                else:
+                if 'LabelName' not in node:
                     continue
-                if len(parents) > 0:
+                children_name = node['LabelName']
+                children_index = self.label_id_mapping[children_name]
+                children = [children_index]
+                if parents:
                     for parent_index in parents:
                         if get_all_parents:
                             children.append(parent_index)
@@ -354,11 +353,13 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
                             float(sp[1]),
                             float(sp[2]),
                             float(sp[3]),
-                            float(sp[4])
+                            float(sp[4]),
                         ],
-                        bbox_label=int(sp[0]) - 1,  # labels begin from 1
+                        bbox_label=int(sp[0]) - 1,
                         ignore_flag=0,
-                        is_group_ofs=True if int(sp[5]) == 1 else False))
+                        is_group_ofs=int(sp[5]) == 1,
+                    )
+                )
             i += img_gt_size
             data_list.append(
                 dict(
@@ -422,9 +423,7 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
                     id_list.append(label_id)
                     index_mapping[label_name] = label_id - 1
         indexes = np.argsort(id_list)
-        classes_names = []
-        for index in indexes:
-            classes_names.append(label_list[index])
+        classes_names = [label_list[index] for index in indexes]
         return classes_names, index_mapping
 
     def _parse_img_level_ann(self, image_level_ann_file):
@@ -445,16 +444,12 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
 
         item_lists = defaultdict(list)
         with get_local_path(
-                image_level_ann_file,
-                backend_args=self.backend_args) as local_path:
+                    image_level_ann_file,
+                    backend_args=self.backend_args) as local_path:
             with open(local_path, 'r') as f:
                 reader = csv.reader(f)
-                i = -1
-                for line in reader:
-                    i += 1
-                    if i == 0:
-                        continue
-                    else:
+                for i, line in enumerate(reader):
+                    if i != 0:
                         img_id = line[0]
                         label_id = line[1]
                         assert label_id in self.label_id_mapping

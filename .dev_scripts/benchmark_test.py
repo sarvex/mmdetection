@@ -66,19 +66,11 @@ def fast_test_model(config_name, checkpoint, args, logger=None):
     cfg.load_from = checkpoint
 
     # TODO: temporary plan
-    if 'visualizer' in cfg:
-        if 'name' in cfg.visualizer:
-            del cfg.visualizer.name
+    if 'visualizer' in cfg and 'name' in cfg.visualizer:
+        del cfg.visualizer.name
 
     # build the runner from config
-    if 'runner_type' not in cfg:
-        # build the default runner
-        runner = Runner.from_cfg(cfg)
-    else:
-        # build customized runner from the registry
-        # if 'runner_type' is set in the cfg
-        runner = RUNNERS.build(cfg)
-
+    runner = RUNNERS.build(cfg) if 'runner_type' in cfg else Runner.from_cfg(cfg)
     runner.test()
 
 

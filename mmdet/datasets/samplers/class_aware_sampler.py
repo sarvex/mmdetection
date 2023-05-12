@@ -94,7 +94,7 @@ class ClassAwareSampler(Sampler):
         # initialize label list
         label_iter_list = RandomCycleIter(self.valid_cat_inds, generator=g)
         # initialize each per-label image list
-        data_iter_dict = dict()
+        data_iter_dict = {}
         for i in self.valid_cat_inds:
             data_iter_dict[i] = RandomCycleIter(self.cat_dict[i], generator=g)
 

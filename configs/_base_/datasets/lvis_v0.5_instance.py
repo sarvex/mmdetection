@@ -73,7 +73,8 @@ test_dataloader = val_dataloader
 
 val_evaluator = dict(
     type='LVISMetric',
-    ann_file=data_root + 'annotations/lvis_v0.5_val.json',
+    ann_file=f'{data_root}annotations/lvis_v0.5_val.json',
     metric=['bbox', 'segm'],
-    backend_args=backend_args)
+    backend_args=backend_args,
+)
 test_evaluator = val_evaluator
